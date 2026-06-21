@@ -1,0 +1,11 @@
+# Skill internals
+sign.key
+.install-source.json
+__skill_meta__.json
+*.json.md
+__pycache__/
+*.pyc
+
+# OS junk
+.DS_Store
+Thumbs.db
