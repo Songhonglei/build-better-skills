@@ -87,11 +87,14 @@ For code and config targets, U findings are always from the Human perspective un
 | `⚠️ WARN` | Should fix (maintainability, consistency, future risk, **agent uncertainty or user friction/confusion**) |
 | `ℹ️ INFO` | Optional (style preference, minor improvement) |
 
-If a dimension has zero issues, output only:
+If a dimension has zero issues, **always print the dimension heading first**, then `✅ No issues` on the next line. Do not omit the heading.
+
 ```
 ### U — Usability & User Experience
 ✅ No issues
 ```
+
+This keeps the report structure predictable and lets readers verify each dimension was actually evaluated.
 
 ## Summary Table
 

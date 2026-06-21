@@ -33,6 +33,8 @@ Mixed targets (e.g., a skill with scripts) → apply both lenses.
 - [ ] Error recovery path: on failure, agent has clear fallback/retry guidance, not a dead end
 - [ ] Trigger precision: description avoids both false-positive triggers and missed real expressions
 - [ ] No circular logic: skill does not send agent back to itself recursively or into infinite retry
+- [ ] **SKILL.md length budget**: body stays within agent context limits — WARN if >500 lines, **ERR if >800 lines** (long SKILL.md silently degrades agent execution: agents may skim, miss critical instructions, or over-spend tokens before getting to the action steps)
+- [ ] **Progressive read hint**: for skills with many references or long body, SKILL.md tells the agent *when* to lazy-load each reference (don't make agent load everything upfront)
 
 **Human perspective (usability)**
 - [ ] Implicit prerequisites surfaced: login, permissions, environment requirements stated upfront
@@ -150,7 +152,10 @@ Mixed targets (e.g., a skill with scripts) → apply both lenses.
 - [ ] Reference files are linked from SKILL.md (not orphaned)
 - [ ] Parameter table covers all parameters; behavior for omitted params is clear
 - [ ] No stale content: old descriptions, deprecated paths, removed features still mentioned
-- [ ] Token budget: SKILL.md body is under 500 lines
+- [ ] **Cross-section references resolve correctly**: every "see Step X.Y" / "as in section Z" / "per X.Y.b above" must match an actual section heading in the same doc — broken section numbers are silent failures (agent will follow them and look for content that doesn't exist)
+- [ ] **No build/runtime artifacts committed**: skill source dir should not contain `sign.key`, `.install-source.json`, `__skill_meta__.json`, `*.json.md`, `__pycache__/`, `.skill-data/`, build output, or test scratch files (these belong in `.gitignore` and are recreated at install/runtime)
+- [ ] **Frontmatter field discipline**: only `name` + `description` should appear in frontmatter; `version` belongs in `package.json` / CHANGELOG, `metadata` / `author` / `tags` / `applicablePosition` etc. belong in README or Markdown body (extras in frontmatter break strict YAML parsers — e.g. Qoder reports "Invalid SKILL.md format", Cursor/Continue may also drop the skill)
+- [ ] (Token budget for SKILL.md length is covered in **U-Agent** "SKILL.md length budget" — do not double-report here)
 
 ### config / document
 - [ ] All required fields present per schema

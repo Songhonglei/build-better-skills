@@ -68,15 +68,16 @@ This skill is part of the
 [build-better-skills](https://github.com/Songhonglei/build-better-skills)
 suite — open-source skills that help you build better skills, end-to-end:
 
-| Stage | Skill | What it does |
-|-------|-------|--------------|
-| Creation | `skill-creator` | Scaffold a new skill from intent |
-| **Audit** | **`glic-check`** | **Systematic quality review (4 / 5 dimensions)** |
-| Testing | `skill-regression` | End-to-end regression testing |
-| Release | `skill-release` | Package + publish to skill hubs |
-| Sediment | `skill-sediment` | Promote successful workflows to skills |
+| Stage | Skill | Status |
+|-------|-------|--------|
+| Creation | `skill-creator` | 🚧 Not yet released |
+| **Audit** | **`glic-check`** | ✅ **v1.0.0** |
+| Testing | `skill-regression` | 🚧 Not yet released |
+| Release | `skill-release` | 🚧 Not yet released |
+| Sediment | `skill-sediment` | 🚧 Not yet released |
 
-(Suite members ship in separate releases as they are open-sourced.)
+Only `glic-check` is installable today. The other entries are roadmap
+placeholders — they will appear in the suite repo as they are open-sourced.
 
 ## Files
 
@@ -86,11 +87,37 @@ glic-check/
 ├── README.md           ← this file
 ├── LICENSE             ← MIT
 ├── .gitignore
+├── scripts/
+│   └── grep_antipatterns.sh  ← optional half-auto pre-scan helper
 └── references/
     ├── dimensions.md   ← detailed sub-check criteria per dimension
     ├── output-format.md ← report template (GLIC + UGLIC variants)
-    └── examples.md     ← 4 worked examples with full reports
+    └── examples.md     ← 5 worked examples (small → large → high-density)
 ```
+
+## Changelog
+
+### v1.0.1 (2026-06-21)
+
+Self-check + three-tier sample validation pass found 6 real gaps in v1.0.0;
+all fixed in this patch.
+
+- ✨ **U-Agent**: Added explicit "SKILL.md length budget" sub-check (WARN > 500 lines, ERR > 800)
+- ✨ **U-Agent**: Added "progressive read hint" sub-check (long SKILL.md should tell agent when to lazy-load each reference)
+- ✨ **I-Skill**: Added "cross-section references resolve correctly" sub-check (broken `see Step X.Y` is a silent failure)
+- ✨ **I-Skill**: Added "no build/runtime artifacts committed" sub-check (sign.key, __skill_meta__.json, .install-source.json, etc.)
+- ✨ **I-Skill**: Added "frontmatter field discipline" sub-check (only `name` + `description`, others break strict YAML parsers)
+- ✨ **SKILL.md Step 2**: Read-target guidance now distinguishes small vs large targets (structural scan first, then deep-read)
+- ✨ **SKILL.md severity escalation**: Clarified "3× WARN → ERR only within the same check, not across separate targets"
+- ✨ **NEW: `scripts/grep_antipatterns.sh`** — half-auto pre-scan that surfaces vague directives, SKILL.md length, frontmatter extras, artifact files, and section-reference candidates
+- ✨ **Example 5**: New worked example for large skill with 18 findings (3 ERR / 13 WARN / 2 INFO) — sets honest expectation that complex skills produce more findings
+
+### v1.0.0 (2026-06-21)
+
+- Initial open-source release
+- GLIC (4-dim) + UGLIC (5-dim) modes
+- 4 worked examples, per-target checklists (code/skill/config/doc)
+- Severity rules with explicit escalation (silent-failure = ERR, 3× WARN → ERR, missing public-param doc = ERR)
 
 ## License
 

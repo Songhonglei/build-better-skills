@@ -1,14 +1,18 @@
 # GLIC / UGLIC Check Examples
 
-Real-world examples demonstrating the expected quality and style. Project
-and skill names are anonymized; the structure, severity logic, and citation
-style are real.
+Real-world examples demonstrating the expected quality and style.
+
+- Example 1 & 3 use generic/hypothetical filenames (e.g. `send_message.py`)
+  for teaching the severity logic; the code shown is illustrative.
+- Example 2 & 4 reference real open-source skills (`copy-my-profile` and
+  `glic-check` itself) — file:line citations there are real and verifiable.
 
 ---
 
 ## Example 1: Code Check — `send_message.py` card-rendering refactor
 
-Target: `send_message.py` recent changes (card entity creation + broadcast path)
+Target: `send_message.py` recent changes (card entity creation + broadcast path).
+*(Hypothetical code. Citations like `send.py:1204` are illustrative — the severity logic and report shape are what to learn from.)*
 
 ### G — Grammar
 ✅ No issues
@@ -155,12 +159,63 @@ Step 6's "fix these?" is concise and effective; suggest stronger wording when U 
 
 ---
 
+## Example 5: UGLIC Skill Check — large skill (high finding density)
+
+Target: hypothetical `complex-app-registrar` skill — 6 files / 1048 lines, SKILL.md 646 lines, includes scripts + references + workflow with many anti-patterns.
+
+> Real, mature skills with multiple integration paths often produce **12-20 findings** on UGLIC. This is normal and proportional — do not artificially trim to make the report "look cleaner". The goal is honest signal.
+
+### U — User Experience
+
+❌ **U1: SKILL.md 646 lines exceeds 500-line guideline** (silent agent-execution degradation; per U-Agent "SKILL.md length budget" rule)
+⚠️ **U2: Step numbering broken** — body says "see Step 6.1.b" but no such section exists
+⚠️ **U3: 25 anti-patterns mixed in priority** — critical security mixed with style preferences
+⚠️ **U4: Hardcoded absolute paths to sibling skills** (won't work in non-OpenClaw runtimes)
+⚠️ **U5: Workflow Step 2 says "Read ALL files in scope" without progressive-read guidance**
+
+### G — Grammar
+⚠️ **G1: frontmatter has `metadata`/`version`/`tags` extras** (per I-skill frontmatter discipline rule)
+ℹ️ **G2-G3: Mixed CJK/ASCII colons and quote styles**
+
+### L — Logic
+❌ **L1: "FATAL: multiple matches" branch has no recovery flow** (silent failure → ERR)
+⚠️ **L2-L3: API failure modes undocumented; critical TZ instruction buried in anti-pattern list**
+
+### I — Integrity
+❌ **I1: SKILL.md references "Step 6.1.b" — actual section is "7.1.b"** (per I-skill cross-section reference rule)
+⚠️ **I2-I4: CHANGELOG.md orphan; `__skill_meta__.json` committed; system-prompt field reading method unspecified**
+
+### C — Containment
+⚠️ **C1-C3: Screenshot DSF=2 no fallback; hardcoded token path; 25 anti-patterns smell of tooling debt that should be encoded in preflight scripts**
+
+## Summary
+| # | Dim | Issue | Severity |
+|---|-----|-------|----------|
+| **U1** | UX | SKILL.md > 500 line budget | ❌ ERR |
+| U2-U5 | UX | Step ref broken / 25 anti-patterns / hardcoded paths / no progressive-read | ⚠️ WARN ×4 |
+| G1 | Grammar | frontmatter extras | ⚠️ WARN |
+| G2-G3 | Grammar | Style consistency | ℹ️ INFO ×2 |
+| **L1** | Logic | FATAL no recovery | ❌ ERR |
+| L2-L3 | Logic | API failure / TZ buried | ⚠️ WARN ×2 |
+| **I1** | Integrity | Broken section reference | ❌ ERR |
+| I2-I4 | Integrity | Orphan changelog / artifact / undocumented field | ⚠️ WARN ×3 |
+| C1-C3 | Containment | DSF / token path / anti-pattern smell | ⚠️ WARN ×3 |
+
+**18 findings total (3 ERR / 13 WARN / 2 INFO).** This is healthy proportion for a complex skill. The 3 ERRs are blocking (must fix before next release), the WARNs cluster around two themes (path portability, doc/workflow organization) that suggest one refactor sweep can address most of them.
+
+**Must fix:** U1, L1, I1
+**Should fix:** U2-U5, G1, L2-L3, I2-I4, C1-C2
+
+> Notice: this is a **healthy** complex-skill report. If your check produces 18+ findings and you can't cluster them into 2-3 themes for a refactor sweep, the skill likely needs to be split or rewritten — flag that upfront to the user rather than listing every issue as independent.
+
+---
+
 ## What These Examples Demonstrate
 
 1. **ERR vs WARN judgment**: ERR = real breakage, doc-code drift, or user fundamentally blocked. WARN = future risk, maintainability, minor inconsistency, or user friction.
 2. **Citation specificity**: Every finding cites `file:line` or section heading.
-3. **Severity escalation**: Multiple related WARNs do not auto-escalate to ERR — only escalate when the same issue appears 3+ times.
+3. **Severity escalation**: Multiple related WARNs do not auto-escalate to ERR — only escalate when the same issue appears 3+ times **within the same check** (cross-target recurrence does not auto-escalate).
 4. **Dimension coverage**: Not every check produces findings. It's fine for a dimension to have zero issues.
-5. **Proportionality**: Don't list 20 nits for a 50-line change. Focus on what matters. If the target is fundamentally broken, say so upfront rather than enumerating symptoms.
+5. **Proportionality scales with target size**: 3-6 findings on a small skill (Examples 2, 4); 12-20 findings on a complex skill (Example 5) is healthy if clustered into themes. Don't force-trim or force-pad to a target number.
 6. **U dimension targeting**: U is most valuable for skills and tools. On pure code/config, fewer U findings is normal — don't force findings where there is no user-facing surface.
 7. **UGLIC vs GLIC**: U findings focus on the experience of using/consuming the skill, not its internal quality. U and G/L/I/C findings can overlap (e.g., a broken instruction is both an Integrity and a User issue) — cite where it matters most.
