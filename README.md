@@ -21,7 +21,7 @@ This suite ships one focused skill per stage of that lifecycle.
 | **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.1** |
 | **Release** | **[`skill-sign`](skills/skill-sign/)** | ✅ **v1.0.0** |
 | Release | `skill-release` | Coming soon |
-| Testing | `skill-regression` | Coming soon |
+| Testing | **[`skill-regression`](skills/skill-regression/)** | ✅ **v1.0.0** |
 | Sediment | `skill-sediment` | Coming soon |
 
 **`skill-hub-united`** (Install) gets skills onto your machine in the first
@@ -106,6 +106,25 @@ authenticity and detect tampering, even on machines that never met the author.
   trust-verify (detects tampering + author substitution).
 
 → Read [`skills/skill-sign/README.md`](skills/skill-sign/README.md) for details.
+
+## skill-regression (testing · end-to-end regression suite)
+
+A regression testing framework for skills: analyze a target skill, run
+script-layer assertions and AI-layer semantic scoring, output a Markdown
+report — in one pipeline.
+
+- **Dual backend** auto-detected:
+  - `api` — any OpenAI-compatible LLM acts as the agent following SKILL.md
+    (stateless, works anywhere)
+  - `openclaw` — real OpenClaw agent end-to-end via cron probe job
+    (when `openclaw` CLI is present)
+- **TEST.md format** with placeholders (`{SKILL_DIR}`, `{TESTRES_DIR}`,
+  `{WORK_DIR}`) for scriptable assertions
+- **LLM-as-judge** scoring (0-10, configurable threshold) for semantic match
+- **Interactive onboarding** + `.env` support (private `SR_*` namespace)
+- **`--rerun` failures only**, **`--detail`** mode, **upload hook** for reports
+
+→ Read [`skills/skill-regression/README.md`](skills/skill-regression/README.md) for details.
 
 ## Install
 

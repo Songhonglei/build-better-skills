@@ -1,0 +1,28 @@
+# skill-regression — gitignore
+
+# Config / secrets (NEVER commit)
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+
+# Test workspace (default location)
+.skill-regression-space/
+skill-regression-space/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
