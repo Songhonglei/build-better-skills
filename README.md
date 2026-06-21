@@ -17,7 +17,7 @@ This suite ships one focused skill per stage of that lifecycle.
 | Creation | `skill-creator` | Coming soon |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
 | **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
-| **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.0** |
+| **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.1** |
 | Release | `skill-release` | Coming soon |
 | Testing | `skill-regression` | Coming soon |
 | Sediment | `skill-sediment` | Coming soon |
