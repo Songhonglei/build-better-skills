@@ -15,19 +15,23 @@ This suite ships one focused skill per stage of that lifecycle.
 | Stage | Skill | Status |
 |-------|-------|--------|
 | Creation | `skill-creator` | Coming soon |
-| **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.0 |
+| **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
 | **Audit** | **[`better-skill-audit`](skills/better-skill-audit/)** | ✅ v1.0.0 |
+| **Release / Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.0** |
+| Release / Publish | `skill-release` | Coming soon |
 | Testing | `skill-regression` | Coming soon |
-| Release | `skill-release` | Coming soon |
 | Sediment | `skill-sediment` | Coming soon |
 
-Two complementary tools share the **Audit** stage:
+Three audit-family tools cover different layers of pre-release validation:
 
-- **`glic-check`** — lightweight & qualitative. A fast multi-dimension review
-  you run right after any edit (no score). Best for tight edit loops.
-- **`better-skill-audit`** — heavyweight & quantitative. A full dryRun-level
-  exam that grades a skill on a 115-point scale with ERR/WARN findings and a
-  scorecard. Best as the pre-ship final check.
+- **`glic-check`** (Audit) — lightweight & qualitative. A fast multi-dimension
+  agent review you run right after any edit. Best for tight edit loops.
+- **`better-skill-audit`** (Audit) — heavyweight & quantitative. A full
+  dryRun-level exam that grades a skill on a 115-point scale. Best as the
+  comprehensive mid-cycle check.
+- **`skill-release-audit`** (Release / Audit) — mechanical static gate.
+  6 modules, no LLM, no network by default. Best as the **final automated
+  gate immediately before publishing** to clawhub / GitHub / skills.sh.
 
 ## glic-check (audit · fast review)
 
@@ -54,6 +58,20 @@ A read-only, multi-dimensional auditor that grades any skill on a 115-point scal
 - **`--fix`**: backup-first, splits auto-safe fixes from business-logic ones
 
 → Read [`skills/better-skill-audit/README.md`](skills/better-skill-audit/README.md) for details.
+
+## skill-release-audit (release · final mechanical gate)
+
+The last machine-checkable gate before `clawhub publish` / `git push` /
+`npx skills publish`. No LLM, no network by default — pure static analysis.
+
+- **6 static modules**: syntax & logic, feature coverage, edge cases & errors,
+  data safety, dependencies (incl. declaration-vs-code env check), documentation
+- **5 registry profiles** (`--target`): clawhub / anthropic / github / skillhub / generic
+- **Bilingual reporting** (`--lang zh|en`, auto-detects from `$LC_ALL` / `$LANG`)
+- **Zero hard dependencies** — Python 3.8+ stdlib only; PyYAML optional
+- **Pure auditor** — never edits your files, never publishes
+
+→ Read [`skills/skill-release-audit/README.md`](skills/skill-release-audit/README.md) for details.
 
 ## Install
 

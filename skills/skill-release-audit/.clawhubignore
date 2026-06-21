@@ -1,0 +1,12 @@
+# Artifacts that should never be published to a registry
+__pycache__/
+*.pyc
+*.pyo
+.sign-key
+sign.key
+.DS_Store
+*.bak
+.tmp/
+tmp/
+AUDIT-*.md
+TEST-*.md

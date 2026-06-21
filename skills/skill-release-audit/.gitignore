@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.skill-data/
+.cache/
+tmp/
+output/
+build/
+dist/
+.env
+.env.local
+*.key
+*.pem
+.secrets/
