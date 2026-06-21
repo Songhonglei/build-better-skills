@@ -17,19 +17,19 @@ This suite ships one focused skill per stage of that lifecycle.
 | Creation | `skill-creator` | Coming soon |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
 | **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
-| **Release / Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.0** |
-| Release / Publish | `skill-release` | Coming soon |
+| **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.0** |
+| Release | `skill-release` | Coming soon |
 | Testing | `skill-regression` | Coming soon |
 | Sediment | `skill-sediment` | Coming soon |
 
-Three audit-family tools cover different layers of pre-release validation:
+Three complementary audit tools cover different layers of skill quality:
 
 - **`glic-check`** (Audit) — lightweight & qualitative. A fast multi-dimension
   agent review you run right after any edit. Best for tight edit loops.
 - **`skill-deep-audit`** (Audit) — heavyweight & quantitative. A full
   dryRun-level exam that grades a skill on a 115-point scale. Best as the
   comprehensive mid-cycle check.
-- **`skill-release-audit`** (Release / Audit) — mechanical static gate.
+- **`skill-release-audit`** (Audit) — mechanical static gate.
   6 modules, no LLM, no network by default. Best as the **final automated
   gate immediately before publishing** to clawhub / GitHub / skills.sh.
 
@@ -59,7 +59,7 @@ A read-only, multi-dimensional auditor that grades any skill on a 115-point scal
 
 → Read [`skills/skill-deep-audit/README.md`](skills/skill-deep-audit/README.md) for details.
 
-## skill-release-audit (release · final mechanical gate)
+## skill-release-audit (audit · final mechanical gate)
 
 The last machine-checkable gate before `clawhub publish` / `git push` /
 `npx skills publish`. No LLM, no network by default — pure static analysis.

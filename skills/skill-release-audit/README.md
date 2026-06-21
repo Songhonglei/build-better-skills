@@ -86,14 +86,16 @@ suite — a complete toolchain for the full lifecycle of agent skill development
 |---|---|---|
 | Creation | `skill-creator` | 🚧 Not yet released |
 | Audit | **`glic-check`** | ✅ v1.0.1 |
-| **Release / Audit** | **`skill-release-audit`** | ✅ **v1.0.0** |
-| Release / Publish | `skill-release` | 🚧 Not yet released |
+| Audit | **`skill-deep-audit`** | ✅ v1.0.0 |
+| **Audit** | **`skill-release-audit`** | ✅ **v1.0.0** |
+| Release | `skill-release` | 🚧 Not yet released |
 | Testing | `skill-regression` | 🚧 Not yet released |
 | Sediment | `skill-sediment` | 🚧 Not yet released |
 
-`glic-check` and `skill-release-audit` are **complementary**:
-- `glic-check` = cognitive UGLIC review (LLM-based, use during development)
-- `skill-release-audit` = mechanical static checks (no LLM, last gate before publishing)
+Three Audit-stage tools are **complementary**:
+- `glic-check` = lightweight cognitive UGLIC review (LLM-based, tight edit loops)
+- `skill-deep-audit` = heavyweight cognitive scorecard (115-point, mid-cycle)
+- `skill-release-audit` = mechanical static gate (no LLM, last automated gate before publishing)
 
 ## Known Issues (v1.0.0)
 
@@ -117,6 +119,21 @@ all 5 targets). Will be addressed in v1.0.1+:
   should be `deps.py_missing`. Cosmetic, no functional impact.
 
 ## Changelog
+
+### v1.0.1 (2026-06-21)
+
+Documentation-only patch — reclassified within the build-better-skills suite.
+
+- **Stage reclassification**: moved from Release/Audit → **Audit** stage,
+  joining `glic-check` and `skill-deep-audit` as the three complementary
+  Audit-stage tools (cognitive lightweight / cognitive heavyweight /
+  mechanical gate). The Release stage is now reserved for `skill-release`
+  (packaging + publishing tool, coming soon)
+- **Stages table**: added `skill-deep-audit` row (was missing in v1.0.0)
+- **Complementary workflow**: now documents the 3-tool workflow
+  (`glic-check` → `skill-deep-audit` → `skill-release-audit`)
+- No code changes — all 6 modules, 5 profiles, and bilingual reporting
+  remain identical to v1.0.0
 
 ### v1.0.0 (2026-06-21)
 

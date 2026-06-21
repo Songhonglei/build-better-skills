@@ -19,7 +19,7 @@ description: >
 
 # skill-release-audit
 
-- **Version**: 1.0.0
+- **Version**: 1.0.1
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
@@ -197,17 +197,21 @@ suite — a complete toolchain for the full lifecycle of agent skill development
 |---|---|---|---|
 | Creation | `skill-creator` | 🚧 Not yet released | Scaffold a new skill from intent |
 | Audit | **`glic-check`** | ✅ **v1.0.1** | Cognitive UGLIC quality review (4 / 5 dimensions) |
-| **Release / Audit** | **`skill-release-audit`** | ✅ **v1.0.0** | **Mechanical pre-publish gate (6 static-check modules)** |
-| Release / Publish | `skill-release` | 🚧 Not yet released | Package + publish to hubs |
+| Audit | **`skill-deep-audit`** | ✅ **v1.0.0** | Heavyweight quantitative scoring (115-point scale, L1/L2 depths) |
+| **Audit** | **`skill-release-audit`** | ✅ **v1.0.0** | **Mechanical pre-publish gate (6 static-check modules)** |
+| Release | `skill-release` | 🚧 Not yet released | Package + publish to hubs |
 | Testing | `skill-regression` | 🚧 Not yet released | End-to-end regression testing |
 | Sediment | `skill-sediment` | 🚧 Not yet released | Promote successful workflows to skills |
 
-`glic-check` and `skill-release-audit` are **complementary**:
+Three Audit-stage tools are **complementary**:
 
-- `glic-check` does **cognitive** review (UGLIC 5 dimensions) — needs an agent
-  to read and judge. Use during development.
-- `skill-release-audit` does **mechanical** checks (6 static-rule modules) — no
-  LLM, just static analysis. Use as the last gate before publishing.
+- `glic-check` — **cognitive** lightweight review (UGLIC 5 dimensions) — agent
+  reads and judges. Use during tight edit loops.
+- `skill-deep-audit` — **cognitive** heavyweight scorecard (115-point scale,
+  7 dimensions, L1/L2 depths). Use for mid-cycle comprehensive checks.
+- `skill-release-audit` — **mechanical** static gate (6 modules, no LLM,
+  no network by default). Use as the last automated gate before publishing.
 
-Recommended workflow: `glic-check` during development → `skill-release-audit`
-right before `clawhub publish` / `git push` / `npx skills publish`.
+Recommended workflow: `glic-check` during development →
+`skill-deep-audit` mid-cycle → `skill-release-audit` right before
+`clawhub publish` / `git push` / `npx skills publish`.
