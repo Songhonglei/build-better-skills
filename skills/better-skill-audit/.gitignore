@@ -1,0 +1,26 @@
+# Skill internals
+sign.key
+.install-source.json
+__skill_meta__.json
+*.json.md
+__pycache__/
+*.pyc
+*.pyo
+
+# Audit artifacts (produced by this skill itself when auditing other skills)
+AUDIT-*.md
+
+# Local dev / scratch
+tmp/
+output/
+.cache/
+
+# Credentials & private keys (defense-in-depth — never commit)
+id_rsa
+*.p12
+certs/*.key
+*.pem
+
+# OS junk
+.DS_Store
+Thumbs.db

@@ -16,11 +16,20 @@ This suite ships one focused skill per stage of that lifecycle.
 |-------|-------|--------|
 | Creation | `skill-creator` | Coming soon |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.0 |
+| **Audit** | **[`better-skill-audit`](skills/better-skill-audit/)** | ✅ v1.0.0 |
 | Testing | `skill-regression` | Coming soon |
 | Release | `skill-release` | Coming soon |
 | Sediment | `skill-sediment` | Coming soon |
 
-## glic-check (audit)
+Two complementary tools share the **Audit** stage:
+
+- **`glic-check`** — lightweight & qualitative. A fast multi-dimension review
+  you run right after any edit (no score). Best for tight edit loops.
+- **`better-skill-audit`** — heavyweight & quantitative. A full dryRun-level
+  exam that grades a skill on a 115-point scale with ERR/WARN findings and a
+  scorecard. Best as the pre-ship final check.
+
+## glic-check (audit · fast review)
 
 Systematic, multi-dimension quality check for skills, code, configs, and docs.
 
@@ -31,6 +40,20 @@ Every finding cites `file:line`. Severity is tagged `ERR` / `WARN` / `INFO`
 with explicit escalation rules (silent-failure = ERR, repeated WARN → ERR).
 
 → Read [`skills/glic-check/README.md`](skills/glic-check/README.md) for details.
+
+## better-skill-audit (audit · comprehensive exam)
+
+A read-only, multi-dimensional auditor that grades any skill on a 115-point scale.
+
+- **7 dimensions**: process closure & idempotency, tool/command conventions,
+  portability & defense, usability, security & op risk, code & doc quality,
+  dependency & footprint health
+- **Two depths**: L1 static (~2 min) and L2 dryRun (~5 min, read-only hub +
+  reachability checks)
+- **Strict pass gate**: total ≥ 90 **and** zero ERR
+- **`--fix`**: backup-first, splits auto-safe fixes from business-logic ones
+
+→ Read [`skills/better-skill-audit/README.md`](skills/better-skill-audit/README.md) for details.
 
 ## Install
 
