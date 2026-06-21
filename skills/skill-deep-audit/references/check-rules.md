@@ -1,4 +1,4 @@
-# better-skill-audit — Complete Check Rules
+# skill-deep-audit — Complete Check Rules
 
 ## Scan-scope conventions
 
@@ -20,7 +20,7 @@
 - If the same content appears both in `scripts/` and `references/`, the
   actual call in `scripts/` takes precedence.
 - `AUDIT-*.md` files under the audited skill directory are produced by
-  better-skill-audit and are **always excluded** — they do not participate
+  skill-deep-audit and are **always excluded** — they do not participate
   in any check dimension.
 
 ---

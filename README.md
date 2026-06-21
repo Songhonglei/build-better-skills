@@ -16,7 +16,7 @@ This suite ships one focused skill per stage of that lifecycle.
 |-------|-------|--------|
 | Creation | `skill-creator` | Coming soon |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
-| **Audit** | **[`better-skill-audit`](skills/better-skill-audit/)** | ✅ v1.0.0 |
+| **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
 | **Release / Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.0** |
 | Release / Publish | `skill-release` | Coming soon |
 | Testing | `skill-regression` | Coming soon |
@@ -26,7 +26,7 @@ Three audit-family tools cover different layers of pre-release validation:
 
 - **`glic-check`** (Audit) — lightweight & qualitative. A fast multi-dimension
   agent review you run right after any edit. Best for tight edit loops.
-- **`better-skill-audit`** (Audit) — heavyweight & quantitative. A full
+- **`skill-deep-audit`** (Audit) — heavyweight & quantitative. A full
   dryRun-level exam that grades a skill on a 115-point scale. Best as the
   comprehensive mid-cycle check.
 - **`skill-release-audit`** (Release / Audit) — mechanical static gate.
@@ -45,7 +45,7 @@ with explicit escalation rules (silent-failure = ERR, repeated WARN → ERR).
 
 → Read [`skills/glic-check/README.md`](skills/glic-check/README.md) for details.
 
-## better-skill-audit (audit · comprehensive exam)
+## skill-deep-audit (audit · comprehensive exam)
 
 A read-only, multi-dimensional auditor that grades any skill on a 115-point scale.
 
@@ -57,7 +57,7 @@ A read-only, multi-dimensional auditor that grades any skill on a 115-point scal
 - **Strict pass gate**: total ≥ 90 **and** zero ERR
 - **`--fix`**: backup-first, splits auto-safe fixes from business-logic ones
 
-→ Read [`skills/better-skill-audit/README.md`](skills/better-skill-audit/README.md) for details.
+→ Read [`skills/skill-deep-audit/README.md`](skills/skill-deep-audit/README.md) for details.
 
 ## skill-release-audit (release · final mechanical gate)
 

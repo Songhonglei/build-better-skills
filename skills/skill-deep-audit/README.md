@@ -1,9 +1,9 @@
-# better-skill-audit
+# skill-deep-audit
 
 > Generic, multi-dimension quality audit for agent skills — with explicit
 > ERR / WARN severity, 115-point scoring, and an opt-in `--fix` workflow.
 
-`better-skill-audit` is a **read-only**, deterministic skill auditor. Point
+`skill-deep-audit` is a **read-only**, deterministic skill auditor. Point
 it at any skill folder and it will run 7 dimensions of static (or static +
 read-only dryRun) checks, then produce a scorecard MD with citations,
 ERR / WARN findings, and a fix plan split into "auto-fixable" vs "needs
@@ -40,7 +40,7 @@ Once installed, just ask:
 "check skill quality of ./skills/my-skill"
 "is this skill ready to ship?"
 "lint this skill"
-"do a better-skill-audit on my-skill"
+"do a skill-deep-audit on my-skill"
 ```
 
 The agent will:
@@ -103,7 +103,7 @@ FAIL). WARN uses 3 priority tiers (3 / 2 / 1) to guide fix order.
 
 ## Why this, not a free-form review
 
-| Without better-skill-audit | With better-skill-audit |
+| Without skill-deep-audit | With skill-deep-audit |
 |---------------------------|-------------------------|
 | Agent reviews one thing at a time, may miss a dimension | Agent runs 7 dimensions deterministically |
 | Findings often vague ("looks off here") | Every finding must cite `file:line` and follow the 4-element ERR/WARN structure (problem / example / fix / blast radius) |
@@ -121,7 +121,7 @@ suite — open-source skills that help you build better skills, end-to-end:
 |-------|-------|--------|
 | Creation | `skill-creator` | 🚧 Not yet released |
 | **Audit** | **`glic-check`** | ✅ **v1.0.x** |
-| **Audit** | **`better-skill-audit`** | ✅ **v1.0.0** |
+| **Audit** | **`skill-deep-audit`** | ✅ **v1.0.0** |
 | Testing | `skill-regression` | 🚧 Not yet released |
 | Sediment | `skill-sediment` | 🚧 Not yet released |
 
@@ -129,18 +129,18 @@ Two complementary tools share the **Audit** stage:
 
 - **`glic-check`** — lightweight & qualitative; run right after any edit for a
   fast multi-dimension sanity review (no score).
-- **`better-skill-audit`** (this tool) — heavyweight & quantitative; a full
+- **`skill-deep-audit`** (this tool) — heavyweight & quantitative; a full
   dryRun-level exam that grades the skill on a 115-point scale. Best as the
   pre-ship final check.
 
-Only `glic-check` and `better-skill-audit` are installable today. The other
+Only `glic-check` and `skill-deep-audit` are installable today. The other
 entries are roadmap placeholders — they will appear in the suite repo as
 they are open-sourced.
 
 ## Files
 
 ```
-better-skill-audit/
+skill-deep-audit/
 ├── SKILL.md                       ← agent entry point + workflow (Steps 0–8)
 ├── README.md                      ← this file
 ├── LICENSE                        ← MIT

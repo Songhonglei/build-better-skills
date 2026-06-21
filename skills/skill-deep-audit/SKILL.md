@@ -1,5 +1,5 @@
 ---
-name: better-skill-audit
+name: skill-deep-audit
 description: >
   Generic skill-quality auditor for any agent skill (Claude, OpenClaw,
   Cursor, etc.). Runs a 7-dimension static analysis (D1 process closure
@@ -13,10 +13,10 @@ description: >
   Use when the user asks to "audit a skill", "check skill quality",
   "is this skill ready to ship", "lint my skill", or runs this tool by
   name. Triggers also: "审计这个 Skill"、"检查 Skill 质量"、"Skill 能上线吗"、
-  "better-skill-audit"、"审一下 xxx skill"。
+  "skill-deep-audit"、"审一下 xxx skill"。
 ---
 
-# better-skill-audit — Generic Skill Auditor
+# skill-deep-audit — Generic Skill Auditor
 
 A read-only, multi-dimensional quality auditor for agent skills. Runs static
 analysis + optional dryRun reachability checks and produces a scorecard.
@@ -310,7 +310,7 @@ Estimated score after fixing all ERR: {estimated}/{max}
 
 ## Step 8: Auto-fix (`--fix`) behavior spec
 
-> ⚠️ **This is the only step in better-skill-audit that is allowed to modify
+> ⚠️ **This is the only step in skill-deep-audit that is allowed to modify
 > the audited skill's files**, and only after **explicit user
 > authorization**. The day-to-day audit (Step 0–7) strictly observes the
 > "audit-only, never fix" red line.
@@ -377,7 +377,7 @@ suite — open-source skills that help you build better skills, end-to-end:
 |-------|-------|--------|--------------|
 | Creation | `skill-creator` | 🚧 Not yet released | Scaffold a new skill from intent |
 | **Audit** | **`glic-check`** | ✅ **v1.0.x** | **Fast, qualitative multi-dimension review (G/L/I/C + U) — run right after any edit** |
-| **Audit** | **`better-skill-audit`** | ✅ **v1.0.0** | **Comprehensive dryRun-level exam — 7 dimensions, 115-pt score, `--fix`** |
+| **Audit** | **`skill-deep-audit`** | ✅ **v1.0.0** | **Comprehensive dryRun-level exam — 7 dimensions, 115-pt score, `--fix`** |
 | Testing | `skill-regression` | 🚧 Not yet released | End-to-end regression testing |
 | Sediment | `skill-sediment` | 🚧 Not yet released | Promote successful workflows into new skills |
 
@@ -385,11 +385,11 @@ Two complementary tools share the **Audit** stage:
 
 - **`glic-check`** — lightweight, qualitative. Run it right after a change for a
   quick multi-dimension sanity review (no score). Best for tight edit loops.
-- **`better-skill-audit`** (this skill) — heavyweight, quantitative. A full
+- **`skill-deep-audit`** (this skill) — heavyweight, quantitative. A full
   dryRun-level evaluation that grades the skill on a 115-point scale with
   ERR/WARN findings and a scorecard. Best as a pre-ship "final exam".
 
-Only `glic-check` and `better-skill-audit` ship today. The other entries are
+Only `glic-check` and `skill-deep-audit` ship today. The other entries are
 roadmap placeholders — they will appear in the suite repo as they are
 open-sourced.
 

@@ -16,7 +16,7 @@ Location: the root directory of the audited skill
 | Skill path | {skill-path} |
 | Audit time | {YYYY-MM-DD HH:mm} |
 | Check depth | L{1/2} ({static analysis / dryRun}) |
-| Audit tool version | better-skill-audit v{version} |
+| Audit tool version | skill-deep-audit v{version} |
 
 ---
 
