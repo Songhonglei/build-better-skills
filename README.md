@@ -15,12 +15,17 @@ This suite ships one focused skill per stage of that lifecycle.
 | Stage | Skill | Status |
 |-------|-------|--------|
 | Creation | `skill-creator` | Coming soon |
+| **Install** | **[`skill-hub-united`](skills/skill-hub-united/)** | ✅ v1.0.0 |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
 | **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
 | **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.1** |
 | Release | `skill-release` | Coming soon |
 | Testing | `skill-regression` | Coming soon |
 | Sediment | `skill-sediment` | Coming soon |
+
+**`skill-hub-united`** (Install) gets skills onto your machine in the first
+place — from clawhub, skills.sh, the official Anthropic repo, or your own
+self-hosted hub.
 
 Three complementary audit tools cover different layers of skill quality:
 
@@ -32,6 +37,19 @@ Three complementary audit tools cover different layers of skill quality:
 - **`skill-release-audit`** (Audit) — mechanical static gate.
   6 modules, no LLM, no network by default. Best as the **final automated
   gate immediately before publishing** to clawhub / GitHub / skills.sh.
+
+## skill-hub-united (install)
+
+One installer for multiple skill hubs — picks the right source from how the
+request is phrased, and lets you plug in your own private hub.
+
+- **Sources**: clawhub (default), skills.sh, the official `anthropics/skills`
+  repo, and a configurable self-hosted `custom` hub (`SKILL_HUB_CUSTOM_URL`)
+- Structured exit codes for name conflicts, license gating, multi-skill repos,
+  and missing custom-hub config
+- Path-traversal-safe extraction and strict slug validation
+
+→ Read [`skills/skill-hub-united/README.md`](skills/skill-hub-united/README.md) for details.
 
 ## glic-check (audit · fast review)
 
