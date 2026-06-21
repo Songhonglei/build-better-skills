@@ -19,6 +19,7 @@ This suite ships one focused skill per stage of that lifecycle.
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
 | **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
 | **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.1** |
+| **Release** | **[`skill-sign`](skills/skill-sign/)** | ✅ **v1.0.0** |
 | Release | `skill-release` | Coming soon |
 | Testing | `skill-regression` | Coming soon |
 | Sediment | `skill-sediment` | Coming soon |
@@ -90,6 +91,21 @@ The last machine-checkable gate before `clawhub publish` / `git push` /
 - **Pure auditor** — never edits your files, never publishes
 
 → Read [`skills/skill-release-audit/README.md`](skills/skill-release-audit/README.md) for details.
+
+## skill-sign (release · cryptographic signature)
+
+Sign and verify skill directories with Ed25519 — so recipients can verify
+authenticity and detect tampering, even on machines that never met the author.
+
+- **Real public-key cryptography** — not just a SHA-256 hash. Recipients
+  verify with your public key (safe to share); only you hold the private key.
+- **Pure Python, zero `pip install`** — ships a vendored RFC 8032
+  Appendix A reference implementation (public domain).
+- **XDG-compliant key storage** at `~/.config/skill-sign/` with chmod 600.
+- **Two verification modes**: self-verify (detects tampering) and
+  trust-verify (detects tampering + author substitution).
+
+→ Read [`skills/skill-sign/README.md`](skills/skill-sign/README.md) for details.
 
 ## Install
 
