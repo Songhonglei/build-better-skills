@@ -14,7 +14,8 @@ This suite ships one focused skill per stage of that lifecycle.
 
 | Stage | Skill | Description |
 |-------|-------|-------------|
-| Creation | `skill‑creator` | _Coming soon_ |
+| Creation | [`skill‑creator`](https://github.com/anthropics/skills) | Upstream Anthropic skill scaffolder — the &quot;raw&quot; building block. |
+| **Creation** | **[`skill‑build‑wizard`](skills/skill-build-wizard/)** | Guided 4-stage workflow built on skill-creator — pre-flight → spec → coding → release. |
 | **Install** | **[`skill‑hub‑united`](skills/skill-hub-united/)** | One installer for every skill hub. |
 | **Install** | **[`skill‑hub‑query`](skills/skill-hub-query/)** | Search, install, edit any compatible hub via API. |
 | **Audit** | **[`glic‑check`](skills/glic-check/)** | Fast 4-/5-dimension quality review after every edit. |
@@ -188,3 +189,4 @@ MIT — see [LICENSE](./LICENSE).
 ## Author
 
 Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
+
