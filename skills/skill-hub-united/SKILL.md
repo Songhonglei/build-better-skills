@@ -20,7 +20,7 @@ description: >
 One installer for multiple skill hubs — picks the right source from how the
 user phrases the request.
 
-- **Version**: 1.0.0
+- **Version**: 1.0.2
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
