@@ -14,6 +14,25 @@ source "${SELF_DIR}/_lib.sh"
 
 setup_legacy_notice
 
+# ---------- skillhub.cn provider branch ----------
+# skillhub.cn is queried LIVE (no local cache). Its catalog is huge (~71k
+# skills) with no bulk-export endpoint, so a "sync everything" model is not
+# meaningful. This is informational, not an error -- exit 0.
+# Generic-contract behavior is unaffected when SKILL_HUB_PROVIDER is unset.
+if is_skillhub_cn; then
+  cat >&2 <<EOF
+[info] skillhub.cn is queried live; no local cache needed (no-op sync).
+
+To search and install on skillhub.cn use:
+
+  SKILL_HUB_PROVIDER=skillhub_cn bash $SELF_DIR/query.sh keyword <kw>
+  SKILL_HUB_PROVIDER=skillhub_cn bash $SELF_DIR/query.sh today
+  SKILL_HUB_PROVIDER=skillhub_cn bash $SELF_DIR/query.sh slug <exact-slug>
+  SKILL_HUB_PROVIDER=skillhub_cn bash $SELF_DIR/install.sh <exact-slug>
+EOF
+  exit 0
+fi
+
 # Track temp files so EXIT trap can clean them up on any failure path.
 # Note: setup_legacy_notice already registered an EXIT trap for the legacy notice
 # marker; we replace it with a composed trap that also handles our temp files.

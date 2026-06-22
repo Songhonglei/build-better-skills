@@ -24,6 +24,69 @@ trap _doctor_cleanup EXIT
 echo "=== skill-hub-query self-check ==="
 echo ""
 
+# ---------- skillhub.cn provider branch ----------
+# When SKILL_HUB_PROVIDER=skillhub_cn, run a tailored diagnostic that reflects
+# what's actually supported (install/detail/versions only). Generic-contract
+# behavior is unaffected when the env var is unset.
+if is_skillhub_cn; then
+  echo "[provider] SKILL_HUB_PROVIDER = skillhub_cn"
+  echo "[provider] base URL          = ${SKILLHUB_CN_BASE}"
+  echo ""
+
+  echo "[1/3] checking dependencies..."
+  _SHCN_MISSING=0
+  for cmd in jq curl file unzip; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+      echo "  ok   $cmd"
+    else
+      echo "  miss $cmd (install via your package manager, e.g. apt install -y $cmd)"
+      _SHCN_MISSING=1
+    fi
+  done
+  echo ""
+
+  echo "[2/3] connectivity probe (GET ${SKILLHUB_CN_BASE}/api/v1/skills/skill-creator)"
+  _shcn_body="$(mktemp)"; _DOCTOR_TMP_FILES+=("$_shcn_body")
+  _shcn_http="$(curl -sSL --max-time 10 -o "$_shcn_body" -w "%{http_code}" \
+    "${SKILLHUB_CN_BASE}/api/v1/skills/skill-creator" 2>/dev/null || echo "000")"
+  case "$_shcn_http" in
+    200)
+      _shcn_slug="$(jq -r '.skill.slug // "?"' "$_shcn_body" 2>/dev/null || echo "?")"
+      _shcn_ver="$(jq -r '.latestVersion.version // "?"' "$_shcn_body" 2>/dev/null || echo "?")"
+      echo "  ok   reachable (probe slug=$_shcn_slug latestVersion=$_shcn_ver)"
+      ;;
+    000)
+      echo "  err  network unreachable; check connectivity / proxy / DNS"
+      ;;
+    *)
+      echo "  warn HTTP $_shcn_http (the probe slug may simply be missing; provider URL still reachable)"
+      ;;
+  esac
+  rm -f "$_shcn_body"
+  echo ""
+
+  echo "[3/3] operation matrix"
+  echo "  available (skillhub.cn public API):"
+  echo "    - install <slug>          bash $SELF_DIR/install.sh <slug>"
+  echo "    - query slug <slug>       bash $SELF_DIR/query.sh slug <slug>"
+  echo "    - query versions <slug>   bash $SELF_DIR/query.sh versions <slug>"
+  echo "    - query keyword <kw>      bash $SELF_DIR/query.sh keyword <kw>   (live, no cache)"
+  echo "    - query today             bash $SELF_DIR/query.sh today          (live, no cache)"
+  echo "    - query combo --keyword=  bash $SELF_DIR/query.sh combo --keyword=xx [--category=xx] [--source=xx]"
+  echo "  unavailable (no public API):"
+  echo "    - sync (live mode; no local cache needed -- sync.sh is a no-op here)"
+  echo "    - query author / time modes (no equivalent filter on skillhub.cn)"
+  echo "    - edit (card metadata is a one-way mirror from upstream)"
+  echo ""
+  echo "=== summary ==="
+  if [[ "$_SHCN_MISSING" == "1" ]]; then
+    echo "[blocking] missing dependency above; install the listed tool(s) first."
+    exit 1
+  fi
+  echo "[ok] skillhub.cn provider is configured and reachable."
+  exit 0
+fi
+
 ISSUES=()
 TIPS=()
 add_issue() { ISSUES+=("$1"); }

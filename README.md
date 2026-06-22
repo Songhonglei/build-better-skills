@@ -16,7 +16,7 @@ This suite ships one focused skill per stage of that lifecycle.
 |-------|-------|-------------|
 | Creation | `skill-creator` | _Coming soon_ |
 | **Install** | **[`skill-hub-united`](skills/skill-hub-united/)** | One installer for many hubs (clawhub.ai, skillhub.cn, skills.sh, anthropics/skills, your custom hub). Routes by phrasing; collision-safe extract. |
-| **Install** | **[`skill-hub-query`](skills/skill-hub-query/)** | Deep CRUD against any compatible Hub: search, install, version-history, safe card-metadata edit (GET→diff→backup→PUT→verify→rollback). |
+| **Install** | **[`skill-hub-query`](skills/skill-hub-query/)** | Deep CRUD against any compatible Hub: search, install, version-history, safe card-metadata edit (GET→diff→backup→PUT→verify→rollback). Built-in skillhub.cn provider. |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | Fast multi-dimension review you run after any edit — GLIC (4 dims) / UGLIC (5 dims). Each finding cites `file:line` with ERR/WARN/INFO severity. |
 | **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | Comprehensive 7-dimension auditor on a 115-point scale (pass ≥90 + zero ERR). L1 static (~2min) + L2 dryRun (~5min) depths; opt-in `--fix` with backup. |
 | **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | Final mechanical gate before publish — 6 static modules (no LLM, no network). Per-registry profiles (clawhub / anthropic / github / skillhub / generic). |

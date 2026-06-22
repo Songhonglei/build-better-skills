@@ -45,6 +45,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=_lib.sh
 source "${SCRIPT_DIR}/_lib.sh"
 
+# Built-in provider override: skillhub.cn has no public edit API.
+if is_skillhub_cn; then
+  cat >&2 <<EOF
+[error] Editing card metadata is not supported on skillhub.cn.
+
+Why: card metadata on skillhub.cn is a one-way mirror synced from the upstream
+source (e.g. clawhub or GitHub). The public API only exposes write operations
+for publish / unlist / relist / delete / claim -- none of which edit card
+fields such as summary, tags, visibility, etc. To change card information,
+update the upstream source and re-publish.
+
+Supported skillhub.cn operations:
+  bash $SCRIPT_DIR/query.sh keyword <kw>
+  bash $SCRIPT_DIR/query.sh today
+  bash $SCRIPT_DIR/query.sh slug <exact-slug>
+  bash $SCRIPT_DIR/query.sh versions <exact-slug>
+  bash $SCRIPT_DIR/install.sh <exact-slug>
+EOF
+  exit 1
+fi
+
 # Optional kill-switch for Hubs without /edit
 if [[ "${SKILL_HUB_DISABLE_EDIT:-0}" == "1" ]]; then
   cat >&2 <<EOF

@@ -32,6 +32,260 @@ HUB_AUTH_SCHEME="${SKILL_HUB_AUTH_SCHEME:-Bearer }"  # trailing space intentiona
 # Legacy-compat alias (some downstream code historically referenced HUB_BASE)
 HUB_BASE="$HUB_URL"
 
+# ---------- Built-in provider selector ----------
+# SKILL_HUB_PROVIDER selects a built-in adapter that overrides the generic
+# contract for known public Hubs. Default (unset) = generic-contract behavior.
+# Supported values:
+#   skillhub_cn   -> https://api.skillhub.cn (public read-only API, no auth)
+SKILL_HUB_PROVIDER="${SKILL_HUB_PROVIDER:-}"
+SKILLHUB_CN_BASE="https://api.skillhub.cn"
+# Note: search/list uses /api/skills (NO /v1/), different from detail/versions.
+SKILLHUB_CN_SEARCH_BASE="https://api.skillhub.cn/api/skills"
+
+# Returns 0 if provider is skillhub_cn, non-zero otherwise.
+is_skillhub_cn() {
+  [[ "${SKILL_HUB_PROVIDER:-}" == "skillhub_cn" ]]
+}
+
+# URL-encode a single value using jq (safe for spaces, UTF-8, special chars)
+_url_encode() {
+  local v="$1"
+  jq -rn --arg v "$v" '$v|@uri'
+}
+
+# Validate a skill slug before it is used in URLs or filesystem paths.
+# Rejects path-traversal ('..'), absolute paths, null/newline, and any char
+# outside the allowed set [A-Za-z0-9._-]. Prints an error and returns 1 on
+# failure; returns 0 when the slug is safe.
+# Usage: validate_slug "$SLUG" || exit 1
+validate_slug() {
+  local slug="${1:-}"
+  if [[ -z "$slug" ]]; then
+    echo "[error] slug is empty" >&2
+    return 1
+  fi
+  # Reject control chars (null bytes cannot appear in bash vars, but guard newline/tab)
+  if [[ "$slug" == *$'\n'* || "$slug" == *$'\t'* ]]; then
+    echo "[error] slug contains illegal whitespace/control characters" >&2
+    return 1
+  fi
+  # Reject path-traversal and absolute/separator paths outright
+  if [[ "$slug" == ".." || "$slug" == *"../"* || "$slug" == *"/.."* || "$slug" == */* || "$slug" == *'\'* ]]; then
+    echo "[error] slug must not contain path separators or '..': ${slug}" >&2
+    return 1
+  fi
+  # Strict whitelist: letters, digits, dot, underscore, hyphen
+  if [[ ! "$slug" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    echo "[error] slug contains illegal characters: ${slug} (allowed: letters, digits, . _ -)" >&2
+    return 1
+  fi
+  return 0
+}
+
+# shcn_search <keyword> <page> <pageSize> [sortBy] [order] [category] [source]
+# Echoes raw JSON on stdout when .code == 0; non-zero exit on failure.
+shcn_search() {
+  local keyword="${1:-}"
+  local page="${2:-1}"
+  local pageSize="${3:-24}"
+  local sortBy="${4:-}"
+  local order="${5:-}"
+  local category="${6:-}"
+  local source="${7:-}"
+
+  local qs="page=${page}&pageSize=${pageSize}"
+  if [[ -n "$keyword" ]]; then
+    qs="${qs}&keyword=$(_url_encode "$keyword")"
+  fi
+  if [[ -n "$sortBy" ]]; then
+    qs="${qs}&sortBy=$(_url_encode "$sortBy")"
+  fi
+  if [[ -n "$order" ]]; then
+    qs="${qs}&order=$(_url_encode "$order")"
+  fi
+  if [[ -n "$category" ]]; then
+    qs="${qs}&category=$(_url_encode "$category")"
+  fi
+  if [[ -n "$source" ]]; then
+    qs="${qs}&source=$(_url_encode "$source")"
+  fi
+
+  local tmp http_code
+  tmp="$(mktemp)"
+  http_code="$(curl -sSL --max-time 30 -o "$tmp" -w "%{http_code}" \
+    "${SKILLHUB_CN_SEARCH_BASE}?${qs}" 2>/dev/null || echo "000")"
+  case "$http_code" in
+    200) : ;;
+    000)
+      echo "[error] skillhub.cn: network error contacting ${SKILLHUB_CN_SEARCH_BASE}" >&2
+      echo "        Check connectivity / proxy / DNS" >&2
+      rm -f "$tmp"
+      return 3
+      ;;
+    *)
+      echo "[error] skillhub.cn: search request failed (HTTP ${http_code})" >&2
+      [[ -s "$tmp" ]] && { echo "        Response head:" >&2; head -c 300 "$tmp" >&2; echo >&2; }
+      rm -f "$tmp"
+      return 3
+      ;;
+  esac
+
+  # Validate JSON + .code == 0
+  if ! jq -e . "$tmp" >/dev/null 2>&1; then
+    echo "[error] skillhub.cn: search returned non-JSON body" >&2
+    head -c 300 "$tmp" >&2; echo >&2
+    rm -f "$tmp"
+    return 4
+  fi
+  local code msg
+  code="$(jq -r '.code // empty' "$tmp" 2>/dev/null || echo "")"
+  if [[ "$code" != "0" ]]; then
+    msg="$(jq -r '.message // ""' "$tmp" 2>/dev/null || echo "")"
+    echo "[error] skillhub.cn: search business error (code=${code}): ${msg}" >&2
+    rm -f "$tmp"
+    return 4
+  fi
+
+  cat "$tmp"
+  rm -f "$tmp"
+  return 0
+}
+
+# ---------- skillhub.cn helpers (provider=skillhub_cn) ----------
+# These talk directly to https://api.skillhub.cn. No auth required for the
+# 3 supported read endpoints (detail / versions / download). Search/list/edit
+# are intentionally unsupported (no public API surface).
+
+# shcn_detail <slug> -> JSON body on stdout. Exits non-zero on 404/network err.
+shcn_detail() {
+  local slug="$1"
+  if [[ -z "$slug" ]]; then
+    echo "[error] shcn_detail: slug is required" >&2
+    return 2
+  fi
+  local body http_code tmp
+  tmp="$(mktemp)"
+  http_code="$(curl -sSL --max-time 30 -o "$tmp" -w "%{http_code}" \
+    "${SKILLHUB_CN_BASE}/api/v1/skills/${slug}" 2>/dev/null || echo "000")"
+  case "$http_code" in
+    200)
+      cat "$tmp"
+      rm -f "$tmp"
+      return 0
+      ;;
+    404)
+      echo "[error] skillhub.cn: skill '${slug}' not found (HTTP 404)" >&2
+      echo "        Verify the slug is correct; skillhub.cn has no public list API" >&2
+      rm -f "$tmp"
+      return 3
+      ;;
+    000)
+      echo "[error] skillhub.cn: network error contacting ${SKILLHUB_CN_BASE}" >&2
+      echo "        Check connectivity / proxy / DNS" >&2
+      rm -f "$tmp"
+      return 3
+      ;;
+    *)
+      echo "[error] skillhub.cn: detail request failed (HTTP ${http_code}) for '${slug}'" >&2
+      [[ -s "$tmp" ]] && { echo "        Response head:" >&2; head -c 300 "$tmp" >&2; echo >&2; }
+      rm -f "$tmp"
+      return 3
+      ;;
+  esac
+}
+
+# shcn_versions <slug> -> JSON body on stdout. Exits non-zero on 404/network err.
+shcn_versions() {
+  local slug="$1"
+  if [[ -z "$slug" ]]; then
+    echo "[error] shcn_versions: slug is required" >&2
+    return 2
+  fi
+  local http_code tmp
+  tmp="$(mktemp)"
+  http_code="$(curl -sSL --max-time 30 -o "$tmp" -w "%{http_code}" \
+    "${SKILLHUB_CN_BASE}/api/v1/skills/${slug}/versions" 2>/dev/null || echo "000")"
+  case "$http_code" in
+    200)
+      cat "$tmp"
+      rm -f "$tmp"
+      return 0
+      ;;
+    404)
+      echo "[error] skillhub.cn: skill '${slug}' not found (HTTP 404)" >&2
+      echo "        Verify the slug is correct; skillhub.cn has no public list API" >&2
+      rm -f "$tmp"
+      return 3
+      ;;
+    000)
+      echo "[error] skillhub.cn: network error contacting ${SKILLHUB_CN_BASE}" >&2
+      rm -f "$tmp"
+      return 3
+      ;;
+    *)
+      echo "[error] skillhub.cn: versions request failed (HTTP ${http_code}) for '${slug}'" >&2
+      [[ -s "$tmp" ]] && { echo "        Response head:" >&2; head -c 300 "$tmp" >&2; echo >&2; }
+      rm -f "$tmp"
+      return 3
+      ;;
+  esac
+}
+
+# shcn_download <slug> <out_file> -> writes ZIP to out_file. Exits non-zero on
+# 404 / JSON-error / non-ZIP body / network err.
+shcn_download() {
+  local slug="$1" out="$2"
+  if [[ -z "$slug" || -z "$out" ]]; then
+    echo "[error] shcn_download: slug and out_file are required" >&2
+    return 2
+  fi
+  local http_code
+  # Use -L to follow the 302 redirect. Drop -f so we can capture body on 4xx.
+  http_code="$(curl -sSL --max-time 120 -o "$out" -w "%{http_code}" \
+    "${SKILLHUB_CN_BASE}/api/v1/download?slug=${slug}" 2>/dev/null || echo "000")"
+  case "$http_code" in
+    200) : ;;
+    404)
+      echo "[error] skillhub.cn: skill '${slug}' not found (HTTP 404)" >&2
+      echo "        Run: SKILL_HUB_PROVIDER=skillhub_cn bash $SKILL_DIR/scripts/query.sh slug ${slug} to verify" >&2
+      rm -f "$out"
+      return 3
+      ;;
+    000)
+      echo "[error] skillhub.cn: network error during download for '${slug}'" >&2
+      rm -f "$out"
+      return 3
+      ;;
+    *)
+      echo "[error] skillhub.cn: download failed (HTTP ${http_code}) for '${slug}'" >&2
+      [[ -s "$out" ]] && { echo "        Response head:" >&2; head -c 300 "$out" >&2; echo >&2; }
+      rm -f "$out"
+      return 3
+      ;;
+  esac
+
+  # JSON error body detection (first byte '{')
+  if [[ "$(head -c 1 "$out" 2>/dev/null)" == "{" ]]; then
+    echo "[error] skillhub.cn: response is JSON (likely an error), not a ZIP:" >&2
+    head -c 500 "$out" >&2; echo >&2
+    rm -f "$out"
+    return 5
+  fi
+
+  # Verify ZIP magic: PK\x03\x04 (or PK\x05\x06 empty, PK\x07\x08 spanned)
+  local magic
+  magic="$(head -c 2 "$out" 2>/dev/null || echo "")"
+  if [[ "$magic" != "PK" ]]; then
+    local ftype
+    ftype="$(file -b "$out" 2>/dev/null || echo "")"
+    echo "[error] skillhub.cn: response is not a ZIP (file type: ${ftype}). Body head:" >&2
+    head -c 500 "$out" >&2; echo >&2
+    rm -f "$out"
+    return 5
+  fi
+  return 0
+}
+
 # ---------- XDG-compliant cache & credentials dirs ----------
 _XDG_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}"
 _XDG_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"

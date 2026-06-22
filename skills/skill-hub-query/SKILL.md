@@ -17,11 +17,11 @@ description: >-
 
 # skill-hub-query
 
-- **Version**: 1.0.0
+- **Version**: 1.1.0
 - **License**: MIT
 - **Author**: Evan Song (<https://github.com/Songhonglei>)
 - **Repository**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-hub-query>
-- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Install** stage. Full pipeline: creation → install → audit → release → testing → sediment.
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite (Install stage)
 
 > Drive any compatible Skill Hub from the command line with a single,
 > predictable interface. Works with self-hosted Hubs that implement the
@@ -112,7 +112,8 @@ Then verify with `bash scripts/doctor.sh`.
 
 | Env variable | Default | Purpose |
 |---|---|---|
-| `SKILL_HUB_URL` | **(must be set)** | Hub base URL, e.g. `https://hub.your-company.com` |
+| `SKILL_HUB_PROVIDER` | (unset) | Select a **built-in adapter** for a known public Hub instead of the generic contract. Currently supports `skillhub_cn` (see [Built-in provider: skillhub.cn](#built-in-provider-skillhubcn)). When unset, the generic-contract behavior below applies. |
+| `SKILL_HUB_URL` | **(must be set)** | Hub base URL, e.g. `https://hub.your-company.com` (ignored when `SKILL_HUB_PROVIDER` is set) |
 | `SKILL_HUB_API_PREFIX` | `/api/v1/skill` | Primary API path |
 | `SKILL_HUB_LEGACY_API_PREFIX` | `/api/skill` | Fallback API path |
 | `SKILL_HUB_AUTH_HEADER` | `Authorization` | HTTP header name for auth |
@@ -157,6 +158,57 @@ chmod 600 "${XDG_CONFIG_HOME:-$HOME/.config}/skill-hub-query/credentials.json"
 
 > Never commit tokens to git, never hardcode them in scripts, and never
 > echo the full token to the user.
+
+---
+
+## Built-in provider: skillhub.cn
+
+[skillhub.cn](https://skillhub.cn) is a China-optimized public skills hub.
+Because its API shape differs from the generic contract above, this skill ships
+a **built-in adapter** for it. Activate it with:
+
+```bash
+export SKILL_HUB_PROVIDER=skillhub_cn        # one-off
+# or persist it:
+echo 'export SKILL_HUB_PROVIDER=skillhub_cn' >> ~/.bashrc
+```
+
+When the provider is active, `SKILL_HUB_URL` / token / API-prefix env vars are
+**ignored** — the adapter targets `https://api.skillhub.cn` directly. No token
+is needed (all supported operations are public, read-only).
+
+### Capability matrix (skillhub.cn)
+
+| Operation | Command | Supported? |
+|---|---|---|
+| Search / browse | `query.sh keyword <kw>` · `query.sh today` · `query.sh combo --keyword= --category= --source=` | ✅ live (no local cache) |
+| Skill detail | `query.sh slug <slug>` | ✅ |
+| Version history | `query.sh versions <slug>` | ✅ |
+| Install | `install.sh <slug> [--yes]` | ✅ |
+| `sync.sh` | — | ⚪ no-op (live search needs no cache; informational, exit 0) |
+| `query.sh author <handle>` | — | ❌ no author-filter param on skillhub.cn (use `keyword`) |
+| `edit.sh` (edit card metadata) | — | ❌ not available — see below |
+
+### Why edit is not supported on skillhub.cn
+
+skillhub.cn card metadata (displayName / summary / tags / category) is a
+**one-way mirror synced from the upstream source** (clawhub / GitHub). The only
+write endpoints the platform exposes are publish / unlist / relist / delete /
+claim — **none of which edit card fields**. To change a card, update the
+**upstream source** and re-publish/let it re-sync. (This differs from a
+generic Hub that implements a `PUT /edit` contract, which `edit.sh` drives.)
+
+### Examples (skillhub.cn)
+
+```bash
+export SKILL_HUB_PROVIDER=skillhub_cn
+bash scripts/query.sh keyword code           # search
+bash scripts/query.sh today                  # browse newest
+bash scripts/query.sh slug skill-creator     # detail
+bash scripts/query.sh versions skill-creator # versions
+bash scripts/install.sh skill-creator --yes  # install
+bash scripts/doctor.sh                        # shows the capability matrix
+```
 
 ---
 
@@ -222,6 +274,8 @@ For per-user isolation on shared hosts, configure a per-user `SKILL_HUB_TOKEN`.
 | "Install calendar" | 1) Check cached version 2) Confirm with user 3) After approval: `bash install.sh calendar --yes` |
 | "Update html-go-live to latest" | First `query.sh slug html-go-live` for new version + confirm with user -> after approval `bash install.sh html-go-live --yes` (`--yes` must be user-authorized) |
 | "Install html-go-live 2.4.0" | Same confirmation flow -> after approval `bash install.sh html-go-live 2.4.0 --yes` |
+| "Search skillhub.cn for X" | `SKILL_HUB_PROVIDER=skillhub_cn bash query.sh keyword X` (no token; see [Built-in provider: skillhub.cn](#built-in-provider-skillhubcn)) |
+| "Install X from skillhub.cn" | `SKILL_HUB_PROVIDER=skillhub_cn bash install.sh X --yes` |
 
 > `--yes` is a **user-authorization flag**; an LLM/agent caller **must not add it on its own**.
 > The user must explicitly say "yes" / "go ahead" / "install" first; SKILL.md examples in
@@ -327,6 +381,11 @@ GET  <endpoint><SKILL_HUB_EDIT_PREFIX>/detail/<slug>
 If your Hub uses a different auth scheme, override `SKILL_HUB_AUTH_HEADER` and
 `SKILL_HUB_AUTH_SCHEME` (e.g. `SKILL_HUB_AUTH_HEADER=X-API-Key`
 `SKILL_HUB_AUTH_SCHEME=""`).
+
+> 📖 **Need the full request/response field reference?** When implementing or
+> debugging a self-hosted Hub, read [`references/api.md`](references/api.md) —
+> it documents every endpoint's exact parameters, response envelope, and field
+> semantics in detail.
 
 ---
 

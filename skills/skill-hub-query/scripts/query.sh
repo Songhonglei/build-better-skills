@@ -13,6 +13,175 @@ source "${SELF_DIR}/_lib.sh"
 
 setup_legacy_notice
 
+# ---------- skillhub.cn provider branch ----------
+# This provider intercepts query.sh entirely. It supports:
+#   slug <s>      -> detail
+#   versions <s>  -> versions
+#   keyword <kw>  -> live search (no local cache)
+#   today         -> browse/recent (live)
+#   combo         -> keyword + optional --category / --source
+#   author <h>    -> unsupported (skillhub.cn has no author filter)
+if is_skillhub_cn; then
+  # Pretty-print helper for skillhub.cn search results.
+  # Reads JSON on stdin, prints a numbered table and "Showing N of TOTAL".
+  shcn_print_results() {
+    local title="${1:-Results}"
+    local resp
+    resp="$(cat)"
+    local total count
+    total="$(echo "$resp" | jq -r '.data.total // 0')"
+    count="$(echo "$resp" | jq -r '.data.skills | length')"
+    echo "=== ${title} ==="
+    if [[ "$count" == "0" ]]; then
+      echo "(no results)"
+      echo "Showing 0 of ${total} matches"
+      return 0
+    fi
+    echo "$resp" | jq -r '
+      .data.skills | to_entries[] |
+      "[\(.key + 1)] slug=\(.value.slug)\n" +
+      "    name        : \(.value.name // .value.slug)\n" +
+      "    source      : \(.value.source // "?")   version: \(.value.version // "?")   verified: \(if .value.verified then "yes" else "no" end)\n" +
+      "    installs    : \(.value.installs // 0)   downloads: \(.value.downloads // 0)   stars: \(.value.stars // 0)\n" +
+      "    description : \(((.value.description_zh // "") | select(. != "")) // (.value.description // "") | .[0:80])"
+    '
+    echo ""
+    echo "Showing ${count} of ${total} matches"
+  }
+
+  MODE="${1:-}"; shift || true
+  case "$MODE" in
+    slug)
+      S="${1:-}"
+      if [[ -z "$S" ]]; then
+        echo "[error] slug: missing argument" >&2
+        echo "        Usage: SKILL_HUB_PROVIDER=skillhub_cn bash query.sh slug <exact-slug>" >&2
+        exit 1
+      fi
+      validate_slug "$S" || exit 1
+      detail="$(shcn_detail "$S")" || exit $?
+      echo "$detail" | jq '{
+        slug: .skill.slug,
+        displayName: .skill.displayName,
+        summary: .skill.summary,
+        summary_zh: .skill.summary_zh,
+        latestVersion: .latestVersion,
+        owner: .owner,
+        tags: .skill.tags,
+        category: .skill.category,
+        source: .skill.source,
+        sourceUrl: .skill.sourceUrl,
+        contentZhAvailable: .contentZhAvailable,
+        securityReports: .securityReports,
+        stats: .skill.stats,
+        createdAt: .skill.createdAt,
+        updatedAt: .skill.updatedAt
+      }'
+      exit 0
+      ;;
+    versions)
+      S="${1:-}"
+      if [[ -z "$S" ]]; then
+        echo "[error] versions: missing argument" >&2
+        echo "        Usage: SKILL_HUB_PROVIDER=skillhub_cn bash query.sh versions <exact-slug>" >&2
+        exit 1
+      fi
+      validate_slug "$S" || exit 1
+      vresp="$(shcn_versions "$S")" || exit $?
+      echo "$vresp" | jq '{
+        slug: .slug,
+        source: .source,
+        versions: [.versions[] | {version, createdAt, changelog, securityReports}]
+      }'
+      exit 0
+      ;;
+    keyword)
+      KW="${1:-}"
+      if [[ -z "$KW" ]]; then
+        echo "[error] keyword: missing argument" >&2
+        echo "        Usage: SKILL_HUB_PROVIDER=skillhub_cn bash query.sh keyword <kw>" >&2
+        exit 1
+      fi
+      resp="$(shcn_search "$KW" 1 24 "score" "desc")" || exit $?
+      echo "$resp" | shcn_print_results "Search: \"${KW}\" (skillhub.cn)"
+      exit 0
+      ;;
+    today)
+      # skillhub.cn doesn't advertise a recency sort key; sortBy=updated is a
+      # best-effort attempt that gracefully falls back to score if unsupported.
+      resp="$(shcn_search "" 1 24 "updated" "desc")" || \
+        resp="$(shcn_search "" 1 24 "" "")" || exit $?
+      echo "$resp" | shcn_print_results "Recent / browse (skillhub.cn)"
+      exit 0
+      ;;
+    combo)
+      KW=""; CAT=""; SRC=""
+      for arg in "$@"; do
+        case "$arg" in
+          --keyword=*)  KW="${arg#*=}" ;;
+          --category=*) CAT="${arg#*=}" ;;
+          --source=*)   SRC="${arg#*=}" ;;
+          --author=*|--since=*|--until=*|--exact)
+            echo "[warn] combo: '$arg' is ignored on skillhub.cn (no equivalent filter)" >&2
+            ;;
+          *)
+            echo "[error] combo: unknown flag: $arg" >&2
+            echo "        Valid on skillhub.cn: --keyword=xx --category=xx --source=xx" >&2
+            exit 1
+            ;;
+        esac
+      done
+      resp="$(shcn_search "$KW" 1 24 "score" "desc" "$CAT" "$SRC")" || exit $?
+      label="Combo:"
+      [[ -n "$KW" ]]  && label="${label} keyword=\"${KW}\""
+      [[ -n "$CAT" ]] && label="${label} category=${CAT}"
+      [[ -n "$SRC" ]] && label="${label} source=${SRC}"
+      echo "$resp" | shcn_print_results "${label} (skillhub.cn)"
+      exit 0
+      ;;
+    author)
+      cat >&2 <<EOF
+[error] Author filtering is not supported on skillhub.cn.
+
+The public search API has no author/handle filter parameter. Try a keyword
+search using the author's handle or name:
+
+  SKILL_HUB_PROVIDER=skillhub_cn bash query.sh keyword <author-handle>
+EOF
+      exit 1
+      ;;
+    time)
+      cat >&2 <<EOF
+[error] Time-range filtering is not supported on skillhub.cn.
+
+The public search API has no time-range filter. For recent items try:
+
+  SKILL_HUB_PROVIDER=skillhub_cn bash query.sh today
+EOF
+      exit 1
+      ;;
+    "")
+      cat >&2 <<EOF
+Usage (skillhub.cn provider):
+  SKILL_HUB_PROVIDER=skillhub_cn bash query.sh keyword <kw>
+  SKILL_HUB_PROVIDER=skillhub_cn bash query.sh today
+  SKILL_HUB_PROVIDER=skillhub_cn bash query.sh combo --keyword=xx [--category=xx] [--source=xx]
+  SKILL_HUB_PROVIDER=skillhub_cn bash query.sh slug <exact-slug>
+  SKILL_HUB_PROVIDER=skillhub_cn bash query.sh versions <exact-slug>
+
+Notes:
+  - Search is live (no local cache). No author/time filters available.
+EOF
+      exit 1
+      ;;
+    *)
+      echo "[error] skillhub.cn provider: unknown mode '$MODE'" >&2
+      echo "        Supported: keyword <kw> | today | combo ... | slug <s> | versions <s>" >&2
+      exit 1
+      ;;
+  esac
+fi
+
 if [[ ! -f "$CACHE_FILE" ]]; then
   echo "[error] Cache not found. Run: bash $SELF_DIR/sync.sh" >&2
   echo "        If this is your first use, also run: bash $SELF_DIR/doctor.sh" >&2

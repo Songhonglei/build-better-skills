@@ -42,8 +42,23 @@ if [[ -z "$SLUG" ]]; then
   exit 1
 fi
 
+# Security: validate the slug before it is used in any URL or filesystem path.
+validate_slug "$SLUG" || exit 1
+
 # Resolve version (use cache, fall back to API)
-if [[ -z "$VERSION" ]]; then
+# Note: skillhub.cn has no cache and no version-list API call here; the download
+# endpoint always serves the latest. If a specific version is requested for
+# skillhub.cn we honor it on the URL but the public download endpoint ignores it.
+if is_skillhub_cn; then
+  if [[ -z "$VERSION" ]]; then
+    # Try to resolve latest from skillhub.cn detail (informational only)
+    detail_json="$(shcn_detail "$SLUG" 2>/dev/null || echo "")"
+    if [[ -n "$detail_json" ]]; then
+      VERSION="$(echo "$detail_json" | jq -r '.latestVersion.version // "latest"' 2>/dev/null || echo "latest")"
+    fi
+    [[ -z "$VERSION" ]] && VERSION="latest"
+  fi
+elif [[ -z "$VERSION" ]]; then
   if [[ -f "$CACHE_FILE" ]]; then
     VERSION="$(jq -r --arg s "$SLUG" '.[$s].latestVersion.version // empty' "$CACHE_FILE" 2>/dev/null || echo "")"
   fi
@@ -95,7 +110,11 @@ tmp_zip="$(mktemp 2>/dev/null || mktemp -t skill-hub-query-zip)"
 mv "$tmp_zip" "${tmp_zip}.zip"
 tmp_zip="${tmp_zip}.zip"
 echo "[install] downloading..."
-api_download "$SLUG" "$VERSION" "$tmp_zip"
+if is_skillhub_cn; then
+  shcn_download "$SLUG" "$tmp_zip" || exit $?
+else
+  api_download "$SLUG" "$VERSION" "$tmp_zip"
+fi
 
 zip_size="$(stat -c %s "$tmp_zip" 2>/dev/null || stat -f %z "$tmp_zip")"
 echo "[install] zip size: $zip_size bytes"

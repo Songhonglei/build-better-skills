@@ -1,160 +1,101 @@
 # skill-hub-query
 
-> Drive any compatible Skill Hub from the command line — search, install,
-> update, and edit AI agent skills via a single predictable interface.
-> Works with self-hosted Hubs that implement the documented API contract.
+Query, install, update, and edit AI agent skills on any compatible Skill Hub —
+self-hosted, or any Hub that implements the documented API contract — with a
+single, predictable CLI. Plus a built-in adapter for the public
+[skillhub.cn](https://skillhub.cn) hub.
 
-`skill-hub-query` is a thin, scriptable AgentSkill that talks to any Skill Hub
-exposing a small, documented REST contract. It is the **Install stage** of the
-[`build-better-skills`](../..) suite, complementing
-[`skill-hub-united`](../skill-hub-united/) (the multi-hub installer for
-clawhub.ai / skills.sh / Anthropic skills) by adding **deep CRUD** for one
-target Hub at a time.
+- **License**: MIT
+- **Author**: Evan Song (<https://github.com/Songhonglei>)
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite (Install stage)
 
-## When to use this skill
+> **Heads-up**: for the generic-contract mode this tool does NOT target
+> [clawhub.ai](https://clawhub.ai) — that Hub has its own API surface and an
+> official `clawhub` CLI. Use generic mode for a private/compatible Hub, or use
+> the built-in `skillhub_cn` provider for skillhub.cn.
 
-Use `skill-hub-query` when you need to:
+## Two ways to use it
 
-| Need | Action |
-|------|--------|
-| Search the Hub by keyword / author / time / source | `bash scripts/query.sh ...` (local-cache, sub-ms) |
-| Install or upgrade a specific version of a skill | `bash scripts/install.sh <slug> [version] --yes` |
-| Inspect a skill's version history / single-version detail | `bash scripts/query.sh slug <name>` |
-| Edit a skill's card metadata (display name, tags, visibility, summary, ...) | `bash scripts/edit.sh <slug> --show` |
-| Drive a private / self-hosted Hub from automation | All scripts |
+### 1. Generic contract (self-hosted / compatible Hub)
 
-Use [`skill-hub-united`](../skill-hub-united/) instead when you want one CLI to
-install from **any** of clawhub.ai / skills.sh / Anthropic / a configurable
-custom hub URL.
-
-## Heads-up: this tool is NOT clawhub.ai specific
-
-`skill-hub-query` targets Hubs that implement the API contract documented in
-[`references/api.md`](references/api.md). [clawhub.ai](https://clawhub.ai) has
-its own API surface and an official CLI (`clawhub`); use that CLI for
-clawhub.ai.
-
-This tool is for private / self-hosted / compatible Hubs.
-
-## Quick start
+Point it at any Hub implementing the [API contract](SKILL.md#self-hosted-hub-api-contract):
 
 ```bash
-# 1. Configure your Hub URL (and optionally a token)
 export SKILL_HUB_URL="https://hub.your-company.com"
-export SKILL_HUB_TOKEN="<your-token>"          # optional; needed for private skills
+export SKILL_HUB_TOKEN="<your-token>"   # optional; without it, public-only fallback
 
-# 2. Diagnose
-bash scripts/doctor.sh
-
-# 3. Sync the local cache
-bash scripts/sync.sh
-
-# 4. Use it
-bash scripts/query.sh keyword calendar
-bash scripts/install.sh calendar --yes         # --yes requires user authorization
-bash scripts/edit.sh my-skill --show
+bash scripts/sync.sh                    # refresh local cache
+bash scripts/query.sh keyword calendar  # search
+bash scripts/query.sh slug some-skill   # detail
+bash scripts/install.sh some-skill --yes
+bash scripts/edit.sh some-skill --summary "New summary"   # if your Hub supports /edit
+bash scripts/doctor.sh                  # diagnose configuration
 ```
 
-See [`SKILL.md`](SKILL.md) for the full agent workflow, configuration
-reference, scenarios, and API contract.
+Dual-channel: with a token it uses the authenticated API (full features incl.
+private skills); without a token it falls back to the unauthenticated channel
+(public skills only).
 
-## Features
+### 2. Built-in provider: skillhub.cn
 
-- **Dual-channel routing**: with a token uses the OpenAPI-style authenticated
-  channel; without a token automatically falls back to the legacy
-  unauthenticated channel (search & install public skills).
-- **Local cache (jq, sub-ms queries)**: full + incremental sync with safe
-  cursor handling (server-side `updatedAt`, not local wall-clock).
-- **Path-traversal-safe install**: rejects unsafe ZIP entries; atomic
-  whole-dir replace (no ghost files from old versions); rollback on failure.
-- **Five-stage safe `edit.sh`**: GET -> diff -> backup -> PUT -> dual-channel
-  verify with retry -> auto-rollback. Owner pre-check + visibility edge-case
-  awareness.
-- **Self-hosted-friendly**: every endpoint, auth header, and credentials path
-  is configurable via env vars; XDG-compliant cache / credentials directories.
-- **Agent-callable**: structured exit codes, non-interactive refusal where
-  user authorization (`--yes`) is missing, friendly errors with actionable
-  guidance.
+[skillhub.cn](https://skillhub.cn) is a China-optimized public hub. Activate the
+adapter — no token needed:
+
+```bash
+export SKILL_HUB_PROVIDER=skillhub_cn
+
+bash scripts/query.sh keyword code            # search (live)
+bash scripts/query.sh today                   # browse newest
+bash scripts/query.sh slug skill-creator      # detail
+bash scripts/query.sh versions skill-creator  # version history
+bash scripts/install.sh skill-creator --yes   # install
+bash scripts/doctor.sh                         # capability matrix
+```
+
+When `SKILL_HUB_PROVIDER` is set, `SKILL_HUB_URL` / token are ignored and the
+adapter targets `https://api.skillhub.cn`.
+
+#### skillhub.cn capability matrix
+
+| Operation | Supported? |
+|---|---|
+| Search / browse / detail / versions / install | ✅ live, public, no token |
+| `sync.sh` | ⚪ no-op (live search needs no cache) |
+| `query.sh author <handle>` | ❌ no author filter (use `keyword`) |
+| `edit.sh` (edit card metadata) | ❌ card metadata is a one-way mirror from upstream clawhub/GitHub; change the upstream source and re-publish instead |
+
+## Security
+
+- Skill slugs are validated (`validate_slug`) before use in URLs or filesystem
+  paths — path-traversal (`..`), absolute paths, and illegal characters are
+  rejected.
+- Downloaded archives are checked for ZIP magic bytes and unsafe entry paths
+  before extraction.
+- `--yes` is a **user-authorization flag**; an agent must not add it on its own.
+- Never commit tokens to git or echo full tokens.
 
 ## Configuration
 
-All configuration is via env vars (with credentials-file fallback). See
-[`SKILL.md`](SKILL.md#configuration) for the full table; the minimum is
-`SKILL_HUB_URL`.
+See [`SKILL.md`](SKILL.md#configuration) for the full environment-variable table
+and the [self-hosted Hub API contract](SKILL.md#self-hosted-hub-api-contract).
+For the detailed endpoint/field reference, see
+[`references/api.md`](references/api.md).
 
-| Env variable | Default | Notes |
-|---|---|---|
-| `SKILL_HUB_URL` | **must be set** | Hub base URL |
-| `SKILL_HUB_TOKEN` | (unset) | API token (optional; for private skills) |
-| `SKILL_HUB_AUTH_HEADER` | `Authorization` | e.g. `X-API-Key` for API-key auth |
-| `SKILL_HUB_AUTH_SCHEME` | `Bearer ` | e.g. `""` for API-key auth |
-| `SKILL_HUB_DISABLE_EDIT` | `0` | Set to `1` if your Hub does not implement `/edit` |
+## Changelog
 
-## Hub compatibility
+### v1.1.0
 
-Your Hub must implement these endpoints (response envelope `{code, message, data}`):
+- **New built-in provider `skillhub_cn`** (`SKILL_HUB_PROVIDER=skillhub_cn`):
+  search / browse / detail / versions / install from skillhub.cn via its public
+  REST API, no auth. `edit` is intentionally unsupported (skillhub.cn card
+  metadata is an upstream mirror).
+- **Security: added `validate_slug`** — slugs are now rejected if they contain
+  `..`, path separators, or illegal characters before being used in URLs or
+  paths.
+- Docs: documented the skillhub.cn provider, capability matrix, and progressive
+  reference to `references/api.md`.
 
-```
-GET  <base><SKILL_HUB_API_PREFIX>/search?page=N&size=N           -> {data:{records:[],total:N}}
-GET  <base><SKILL_HUB_API_PREFIX>/versions/<slug>?limit=N        -> {data:{items:[...]}}
-GET  <base><SKILL_HUB_API_PREFIX>/versions/<slug>/<version>      -> {data:{version:{...}}}
-GET  <base><SKILL_HUB_LEGACY_API_PREFIX>/download/<slug>         -> zip bytes
-```
+### v1.0.0
 
-Optionally for `edit.sh`:
-
-```
-PUT  <base><SKILL_HUB_EDIT_PREFIX>/edit/<slug>                    (json patch; empty body returns current state)
-GET  <base><SKILL_HUB_EDIT_PREFIX>/detail/<slug>                  (cross-check channel)
-```
-
-Full details: [`references/api.md`](references/api.md).
-
-## Safety
-
-- **Path-traversal-safe extraction**: zip members that escape the target
-  directory are rejected before unzip.
-- **Atomic whole-dir replace**: a failed install rolls back to the previous
-  version; no ghost files from old releases.
-- **`--yes` is a user-authorization flag**: an LLM/agent caller must NOT add
-  it on its own; without it, `install.sh` / `edit.sh` refuse in non-interactive
-  mode.
-- **Token hygiene**: tokens are masked in logs, never written outside the
-  XDG-compliant credentials directory (mode 600), never committed to git.
-- **Owner pre-check**: `edit.sh` verifies you own the skill before sending
-  a PUT (server-side 403 is the ultimate safety net).
-
-## Files
-
-```
-skill-hub-query/
-├── SKILL.md                          # agent workflow + configuration + scenarios
-├── README.md                         # this file
-├── LICENSE                           # MIT
-├── credentials.example.json          # template for the credentials file
-├── references/
-│   └── api.md                        # detailed API contract reference
-└── scripts/
-    ├── _lib.sh                       # path discovery + token + curl wrapper (sourced)
-    ├── _edit_lib.sh                  # edit.sh internals (sourced)
-    ├── doctor.sh                     # one-shot self-check
-    ├── sync.sh                       # full / incremental cache sync
-    ├── query.sh                      # query the local cache
-    ├── install.sh                    # download + safe extract + atomic dir replace
-    └── edit.sh                       # five-stage safe metadata editor (optional Hub features)
-```
-
-## Compatibility
-
-Follows the [Anthropic Skills spec](https://docs.claude.com/en/docs/build-with-claude/skills);
-runs in any compatible agent runtime (Claude Code, OpenClaw, Cursor, etc.).
-
-## License
-
-MIT — see [LICENSE](LICENSE).
-
-## Part of `build-better-skills`
-
-This skill is part of the [`build-better-skills`](../..) suite, which ships
-one focused skill per stage of the skill lifecycle (creation, install, audit,
-release, testing, sediment).
+- Initial open-source release: generic-contract Hub CRUD (search / detail /
+  versions / install / edit) with dual-channel auth and safety-first edit flow.
