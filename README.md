@@ -15,7 +15,7 @@ This suite ships one focused skill per stage of that lifecycle.
 | Stage | Skill | Status |
 |-------|-------|--------|
 | Creation | `skill-creator` | Coming soon |
-| **Install** | **[`skill-hub-united`](skills/skill-hub-united/)** | ✅ v1.0.0 |
+| **Install** | **[`skill-hub-united`](skills/skill-hub-united/)** | ✅ v1.0.2 |
 | **Install** | **[`skill-hub-query`](skills/skill-hub-query/)** | ✅ **v1.0.0** |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
 | **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
@@ -25,16 +25,18 @@ This suite ships one focused skill per stage of that lifecycle.
 | Testing | **[`skill-regression`](skills/skill-regression/)** | ✅ **v1.0.0** |
 | Sediment | `skill-sediment` | Coming soon |
 
-Two complementary Install tools cover different use cases:
+Two complementary Install tools cover different use cases — one **gets skills
+onto your machine**, the other **manages a Hub's catalog**:
 
-- **`skill-hub-united`** (Install) — one CLI to install from any of clawhub.ai,
-  skills.sh, the official Anthropic repo, or your own configurable custom hub.
-  Best when you want one tool to install a skill from "wherever it lives".
-- **`skill-hub-query`** (Install) — deep CRUD against a **single** target Hub
-  via a documented compatible API contract: search / install / version-history
-  inspection / safe card-metadata editing with rollback. Best for driving a
-  private / self-hosted Hub from automation, or maintaining your own
-  published skills.
+- **`skill-hub-united`** (Install · *fetch*) — one CLI to install from any of
+  clawhub.ai, skills.sh, the official Anthropic repo, or your own configurable
+  custom hub. Pure download + extract. Best when you want one tool to install a
+  skill from "wherever it lives".
+- **`skill-hub-query`** (Install · *manage*) — deep CRUD against a **single**
+  target Hub via a documented compatible API contract: search /
+  install / version-history inspection / safe card-metadata editing with
+  rollback. Best for driving a private / self-hosted Hub from automation, or
+  maintaining your own published skills.
 
 Three complementary audit tools cover different layers of skill quality:
 
