@@ -1,12 +1,12 @@
 # build-better-skills
 
 > A suite of open-source skills that help you build better skills —
-> from creation through audit, release, regression testing, and sediment.
+> from creation through audit, release, documentation, regression testing, and sediment.
 
 Skills are how AI agents extend their own capabilities. As skill ecosystems
 mature, building good skills is itself a discipline: writing clear triggers,
-keeping doc/code in sync, catching regressions, signing releases, and
-promoting successful workflows into reusable skills.
+keeping doc/code in sync, catching regressions, signing releases, generating
+real user-facing docs, and promoting successful workflows into reusable skills.
 
 This suite ships one focused skill per stage of that lifecycle.
 
@@ -22,7 +22,8 @@ This suite ships one focused skill per stage of that lifecycle.
 | **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.1** |
 | **Release** | **[`skill-sign`](skills/skill-sign/)** | ✅ **v1.0.0** |
 | Release | `skill-release` | Coming soon |
-| Testing | **[`skill-regression`](skills/skill-regression/)** | ✅ **v1.0.0** |
+| **Documentation** | **[`skill-introduction`](skills/skill-introduction/)** | ✅ **v1.0.0** |
+| **Testing** | **[`skill-regression`](skills/skill-regression/)** | ✅ **v1.0.0** |
 | Sediment | `skill-sediment` | Coming soon |
 
 Two complementary Install tools cover different use cases — one **gets skills
@@ -135,6 +136,25 @@ authenticity and detect tampering, even on machines that never met the author.
   trust-verify (detects tampering + author substitution).
 
 → Read [`skills/skill-sign/README.md`](skills/skill-sign/README.md) for details.
+
+## skill-introduction (documentation · auto-generated docs page)
+
+Auto-generate a polished, deployable HTML introduction page from any skill's
+`USAGE.md` or `SKILL.md` — so every release ships with a real user-facing
+landing page, not just a Markdown file.
+
+- **One command** — reads `USAGE.md` (preferred) or `SKILL.md`, parses
+  sections, generates a hero / features / quick-start / collapsible docs
+  layout with side-nav and floating install button.
+- **4 themes** — `light` (default), `aurora` (dark glass), `techblue`
+  (debug-tool), `finance` (dark blue + gold).
+- **Pluggable deploy hook** (`SKILL_INTRO_DEPLOY_CMD`) — bring your own
+  uploader; re-runs auto-update the same URL via cached dashboard id.
+- **Vendored `mistune`** (BSD-3-Clause) — block-level Markdown rendering
+  with no `pip install` required; graceful fallback to a regex renderer.
+- **XDG-compliant cache** at `~/.cache/skill-introduction/cache.json`.
+
+→ Read [`skills/skill-introduction/README.md`](skills/skill-introduction/README.md) for details.
 
 ## skill-regression (testing · end-to-end regression suite)
 
