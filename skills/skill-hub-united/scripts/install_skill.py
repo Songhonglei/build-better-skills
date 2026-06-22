@@ -2,17 +2,19 @@
 """
 skill-hub-united multi-source skill installer
 
-Supports 4 sources:
-  - clawhub   (default) : clawhub.ai public hub (REST, npx fallback)
-  - skills_sh           : skills.sh / npx skills CLI (GitHub source-based)
-  - anthropic           : anthropics/skills GitHub repo (sparse-checkout)
-  - custom              : your own self-hosted hub (set SKILL_HUB_CUSTOM_URL)
+Supports 5 sources:
+  - clawhub     (default) : clawhub.ai public hub (REST, npx fallback)
+  - skillhub_cn           : skillhub.cn — SkillHub, a China-optimized public hub (REST)
+  - skills_sh             : skills.sh / npx skills CLI (GitHub source-based)
+  - anthropic             : anthropics/skills GitHub repo (sparse-checkout)
+  - custom                : your own self-hosted hub (set SKILL_HUB_CUSTOM_URL)
 
 Usage:
     python3 install_skill.py <slug-or-source> [--source SRC] [--force-license] [--rename NEW_NAME]
 
     python3 install_skill.py my-tool                       # default: clawhub
     python3 install_skill.py my-tool --source clawhub
+    python3 install_skill.py my-tool --source skillhub_cn
     python3 install_skill.py obra/superpowers --source skills_sh
     python3 install_skill.py webapp-testing --source anthropic
     python3 install_skill.py docx --source anthropic --force-license
@@ -88,6 +90,7 @@ SKILLS_DIR = _resolve_skills_dir()
 # Configure via env; unset = the "custom" source is disabled.
 CUSTOM_HUB_BASE = os.environ.get("SKILL_HUB_CUSTOM_URL", "").strip().rstrip("/")
 CLAWHUB_BASE = "https://clawhub.ai/api/v1/download"
+SKILLHUB_CN_BASE = "https://api.skillhub.cn/api/v1/download"
 ANTHROPIC_REPO = "https://github.com/anthropics/skills.git"
 
 # Whitelist of Apache 2.0 licensed skills inside the Anthropic repo
@@ -112,6 +115,7 @@ ANTHROPIC_RESTRICTED = {"docx", "xlsx", "pdf", "pptx", "doc-coauthoring", "inter
 SOURCE_PREFIX = {
     "custom": "custom-",
     "clawhub": "clawhub-",
+    "skillhub_cn": "shcn-",
     "skills_sh": "sh-",
     "anthropic": "claude-",
 }
@@ -158,7 +162,7 @@ def validate_slug(slug: str, source: str) -> None:
         if not re.match(r"^[a-zA-Z0-9._:/@#-]+$", slug):
             err(f"skills.sh source spec contains illegal characters: {slug!r} (allowed: letters, digits, . _ - : / @ #)")
     else:
-        # custom / clawhub / anthropic use a strict slug character set.
+        # custom / clawhub / skillhub_cn / anthropic use a strict slug character set.
         if not re.match(r"^[a-zA-Z0-9._-]+$", slug):
             err(f"{source} slug contains illegal characters: {slug!r} (allowed: letters, digits, . _ -)")
 
@@ -454,6 +458,61 @@ def _install_clawhub_via_npx(slug: str, rename: str | None, rest_err: str | None
     ok(f"Skill '{final_name}' installed successfully → {target}")
 
 
+# ─── skillhub.cn (SkillHub — China-optimized public hub) ──────────────
+def install_skillhub_cn(slug: str, rename: str | None) -> None:
+    """Install from SkillHub (skillhub.cn) via its public REST download API.
+
+    Contract (verified against the site's own client):
+      GET https://api.skillhub.cn/api/v1/download?slug=<slug>
+        -> 302 redirect -> application/zip
+      404 plaintext when the slug does not exist.
+    No public CLI exists, so there is no fallback path (unlike clawhub's npx).
+    """
+    url = f"{SKILLHUB_CN_BASE}?slug={urlquote(slug, safe='-._')}"
+    info(f"downloading from skillhub.cn: {url}")
+    try:
+        # urlopen follows the 302 to the zip automatically.
+        req = Request(url, headers={"Accept": "application/zip, application/octet-stream, */*"})
+        resp = urlopen(req, timeout=60)
+        data = resp.read()
+    except HTTPError as e:
+        if e.code == 404:
+            err(f"Skill '{slug}' not found on skillhub.cn (404) — check the slug at https://skillhub.cn")
+        if e.code in (401, 403):
+            err(f"no access to '{slug}' on skillhub.cn ({e.code}) — it may be private")
+        err(f"download failed HTTP {e.code}: {e.reason}")
+    except URLError as e:
+        err(f"network error reaching skillhub.cn: {e.reason}")
+
+    # Detect a JSON error body masquerading as a 200 download.
+    if data[:1] == b"{":
+        try:
+            j = json.loads(data.decode("utf-8", errors="replace"))
+            err(f"skillhub.cn returned an error payload: {j}")
+        except json.JSONDecodeError:
+            pass
+
+    # Stage under a temp dir, then name the target from the SKILL.md `name`.
+    with tempfile.TemporaryDirectory() as staging:
+        staging_path = Path(staging) / "pkg"
+        try:
+            extract_archive(data, staging_path)
+        except RuntimeError as e:
+            err(f"skillhub.cn response was not a valid archive: {e}")
+
+        real_name = _read_skill_name(staging_path) or slug
+        target, final_name, _ = resolve_target_dir(real_name, "skillhub_cn", rename)
+        # Replace semantics: wipe target before moving so stale files do not linger.
+        if target.exists():
+            shutil.rmtree(target)
+        shutil.move(str(staging_path), str(target))
+
+    if rename or final_name != real_name:
+        patch_skill_md_name(target, final_name)
+    write_source_marker(target, {"source": "skillhub_cn", "slug": slug, "url": url, "skill_name": final_name})
+    ok(f"Skill '{final_name}' installed successfully → {target}")
+
+
 # ─── skills.sh ────────────────────────────────────────────────────────
 def install_skills_sh(source_spec: str, rename: str | None) -> None:
     """source_spec formats:
@@ -626,7 +685,7 @@ def _read_skill_name(skill_dir: Path, _depth: int = 0) -> str | None:
 def main() -> None:
     p = argparse.ArgumentParser(description="skill-hub-united multi-source installer")
     p.add_argument("slug", help="skill slug, or source spec (for the skills.sh source)")
-    p.add_argument("--source", choices=["clawhub", "skills_sh", "anthropic", "custom"],
+    p.add_argument("--source", choices=["clawhub", "skillhub_cn", "skills_sh", "anthropic", "custom"],
                    default="clawhub", help="install source (default: clawhub)")
     p.add_argument("--force-license", action="store_true",
                    help="anthropic source only: confirm using a source-available skill outside Claude")
@@ -647,6 +706,8 @@ def main() -> None:
         install_custom(args.slug, args.rename)
     elif args.source == "clawhub":
         install_clawhub(args.slug, args.rename)
+    elif args.source == "skillhub_cn":
+        install_skillhub_cn(args.slug, args.rename)
     elif args.source == "skills_sh":
         install_skills_sh(args.slug, args.rename)
     elif args.source == "anthropic":

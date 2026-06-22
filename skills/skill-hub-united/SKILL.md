@@ -2,17 +2,18 @@
 name: skill-hub-united
 description: >
   Install skills from multiple skill hubs with one tool: clawhub.ai
-  (default), skills.sh (npx skills, GitHub-based), the official
-  anthropics/skills repo, and your own self-hosted "custom" hub. Routes
-  to the right source based on how the user phrases the request, handles
-  name collisions (rename/overwrite/abort), Anthropic source-available
-  license gating, multi-skill repos, and path-traversal-safe extraction.
-  Use when the user says "install skill X", "add skill X", "download
-  skill X", "get X from clawhub", "use skills.sh to install X", "npx
-  skills add X", "install the claude/anthropic X skill", or "install X
-  from my hub". Also triggers in Chinese: "安装skill xxx"、"装一下xxx"、
-  "下载skill xxx"、"从 clawhub 装 xxx"、"用 skills.sh 装 xxx"、"装 claude 的 xxx"、
-  "从我的 hub 装 xxx"。
+  (default), skillhub.cn (SkillHub, China-optimized), skills.sh (npx
+  skills, GitHub-based), the official anthropics/skills repo, and your
+  own self-hosted "custom" hub. Routes to the right source based on how
+  the user phrases the request, handles name collisions
+  (rename/overwrite/abort), Anthropic source-available license gating,
+  multi-skill repos, and path-traversal-safe extraction. Use when the
+  user says "install skill X", "add skill X", "download skill X", "get X
+  from clawhub", "get X from skillhub.cn", "use skills.sh to install X",
+  "install the claude/anthropic X skill", or "install X from my hub".
+  Also triggers in Chinese: "安装skill xxx"、"装一下xxx"、"下载skill xxx"、
+  "从 clawhub 装 xxx"、"从 skillhub.cn 装 xxx"、"用 skills.sh 装 xxx"、
+  "装 claude 的 xxx"、"从我的 hub 装 xxx"。
 ---
 
 # Skill Hub United Installer
@@ -20,7 +21,7 @@ description: >
 One installer for multiple skill hubs — picks the right source from how the
 user phrases the request.
 
-- **Version**: 1.0.2
+- **Version**: 1.0.3
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
@@ -31,6 +32,7 @@ user phrases the request.
 | Source | What it is | Auth |
 |---|---|---|
 | `clawhub` (default) | clawhub.ai public hub (REST, with `npx clawhub` fallback) | none |
+| `skillhub_cn` | skillhub.cn — SkillHub, a China-optimized public hub (REST) | none |
 | `skills_sh` | skills.sh / `npx skills` CLI (GitHub-source based) | none |
 | `anthropic` | the official `anthropics/skills` GitHub repo (sparse-checkout) | none |
 | `custom` | your own self-hosted hub — any `GET <base>/<slug>` endpoint that returns a skill zip | up to you |
@@ -40,12 +42,13 @@ user phrases the request.
 | User wording | `--source` |
 |---|---|
 | no source mentioned / "clawhub" / "openclaw official" / default | `clawhub` (default) |
+| "skillhub.cn" / "腾讯 skillhub" / "tencent skillhub" / "国内 hub" / "skillhub 中国" | `skillhub_cn` |
 | "skills.sh" / "npx skills" / "open skills" / "skills cli" | `skills_sh` |
 | "anthropic" / "claude official" / "claude skills" / "anthropics/skills" | `anthropic` |
 | "my hub" / "custom hub" / "self-hosted" / "private hub" / "company hub" | `custom` |
 
 **Ambiguity**: if the user names multiple sources or is unclear, **ask first**
-("Which source — clawhub / skills.sh / anthropic / custom?"); do not guess.
+("Which source — clawhub / skillhub.cn / skills.sh / anthropic / custom?"); do not guess.
 
 ## 2. Workflow
 
@@ -79,6 +82,7 @@ On normal install, the package's own `name` is used (no prefix).
 |---|---|---|
 | custom | `custom-` | `custom-coding-agent` |
 | clawhub | `clawhub-` | `clawhub-coding-agent` |
+| skillhub_cn | `shcn-` | `shcn-coding-agent` |
 | skills.sh | `sh-` | `sh-coding-agent` |
 | anthropic | `claude-` | `claude-coding-agent` |
 
@@ -125,6 +129,13 @@ Set `SKILL_HUB_SKILLS_DIR` the same one-time way if your agent uses a non-standa
 - REST first: `https://clawhub.ai/api/v1/download?slug=<slug>`
 - Falls back to `npx clawhub@latest install` if REST fails
 - Final directory name follows the package's SKILL.md `name` (clawhub slugs often carry an owner prefix)
+
+### skillhub_cn (skillhub.cn)
+- REST: `https://api.skillhub.cn/api/v1/download?slug=<slug>` → 302 → skill zip
+- No public CLI, so there is **no** fallback path (unlike clawhub's npx)
+- 404 (slug not found) / 401 / 403 (private) / network errors reported clearly; a 200 with a JSON error body is detected and reported
+- Final directory name follows the package's SKILL.md `name`
+- China-optimized public hub; good when clawhub.ai is slow/unreachable from the user's network
 
 ### skills.sh
 - Calls `npx skills@latest add <repo> -y --copy [-s <skill-name>]`

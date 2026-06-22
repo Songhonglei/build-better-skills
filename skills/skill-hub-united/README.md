@@ -13,6 +13,7 @@ own private/self-hosted hub with one environment variable.
 | Source | What it is | Auth |
 |--------|------------|------|
 | **`clawhub`** (default) | [clawhub.ai](https://clawhub.ai) public hub (REST + `npx clawhub` fallback) | none |
+| **`skillhub_cn`** | [skillhub.cn](https://skillhub.cn) — SkillHub, a China-optimized public hub (REST) | none |
 | **`skills_sh`** | [skills.sh](https://skills.sh) / `npx skills` CLI (GitHub-based) | none |
 | **`anthropic`** | the official [`anthropics/skills`](https://github.com/anthropics/skills) repo (sparse-checkout) | none |
 | **`custom`** | **your own self-hosted hub** — any `GET <base>/<slug>` endpoint that returns a skill zip/tar | your choice |
@@ -25,6 +26,7 @@ Once installed, just ask:
 ```
 "install my-tool"                 → clawhub (default)
 "install my-tool from clawhub"
+"install my-tool from skillhub.cn" → skillhub_cn (China-optimized hub)
 "use skills.sh to add obra/superpowers"
 "install the anthropic webapp-testing skill"
 "install my-tool from my hub"     → custom (self-hosted)
@@ -32,6 +34,25 @@ Once installed, just ask:
 
 The agent runs the installer and handles structured exit codes (name
 conflicts, license gating, multi-skill repos, missing custom-hub config).
+
+## SkillHub (skillhub.cn)
+
+[skillhub.cn](https://skillhub.cn) is a China-optimized public skills hub. The
+`skillhub_cn` source installs from its public REST API — no login or token
+needed:
+
+```bash
+python3 scripts/install_skill.py skill-creator --source skillhub_cn
+# or just tell the agent: "install skill-creator from skillhub.cn"
+```
+
+Under the hood it requests `GET https://api.skillhub.cn/api/v1/download?slug=<slug>`
+(which 302-redirects to the skill zip) and extracts it into your skills dir. A
+404 means the slug doesn't exist on skillhub.cn; 401/403 means it's private.
+There is no public CLI for skillhub.cn, so (unlike clawhub) there is no npx
+fallback — the REST API is the only path.
+
+This source is handy when clawhub.ai is slow or unreachable from your network.
 
 ## Self-hosted "custom" hub
 
@@ -200,6 +221,12 @@ suite — open-source skills that help you build better skills, end-to-end:
 are installable today. The other entries are roadmap placeholders.
 
 ## Changelog
+
+### v1.0.3 (2026-06-22)
+
+- **New source `skillhub_cn`**: install from [skillhub.cn](https://skillhub.cn)
+  (SkillHub, a China-optimized public hub) via its public REST download API.
+  No auth required. Endpoint contract verified end-to-end.
 
 ### v1.0.2 (2026-06-22)
 
