@@ -15,51 +15,16 @@ This suite ships one focused skill per stage of that lifecycle.
 | Stage | Skill | Description |
 |-------|-------|-------------|
 | Creation | `skill‑creator` | _Coming soon_ |
-| **Install** | **[`skill‑hub‑united`](skills/skill-hub-united/)** | One installer for many hubs (clawhub.ai, skillhub.cn, skills.sh, anthropics/skills, your custom hub). Routes by phrasing; collision-safe extract. |
-| **Install** | **[`skill‑hub‑query`](skills/skill-hub-query/)** | Deep CRUD against any compatible Hub: search, install, version-history, safe card-metadata edit (GET→diff→backup→PUT→verify→rollback). Built-in skillhub.cn provider. |
-| **Audit** | **[`glic‑check`](skills/glic-check/)** | Fast multi-dimension review you run after any edit — GLIC (4 dims) / UGLIC (5 dims). Each finding cites `file:line` with ERR/WARN/INFO severity. |
-| **Audit** | **[`skill‑deep‑audit`](skills/skill-deep-audit/)** | Comprehensive 7-dimension auditor on a 115-point scale (pass ≥90 + zero ERR). L1 static (~2min) + L2 dryRun (~5min) depths; opt-in `--fix` with backup. |
-| **Audit** | **[`skill‑release‑audit`](skills/skill-release-audit/)** | Final mechanical gate before publish — 6 static modules (no LLM, no network). Per-registry profiles (clawhub / anthropic / github / skillhub / generic). |
-| **Release** | **[`skill‑sign`](skills/skill-sign/)** | Cryptographically sign and verify skills with Ed25519 (RFC 8032). Proves both integrity AND authorship; pure Python, zero `pip install`. |
-| **Release** | **[`skill‑release‑plus`](skills/skill-release-plus/)** | Multi-hub publisher with pluggable adapter framework. Single sign+pack pass fan-out to clawhub.com, skillhub.cn, GitHub Releases, or your custom hook. |
-| **Documentation** | **[`skill‑introduction`](skills/skill-introduction/)** | Auto-generate a polished, deployable HTML intro page from any skill's `USAGE.md` or `SKILL.md`. 4 themes (light/aurora/techblue/finance); pluggable deploy hook; vendored mistune. |
-| **Testing** | **[`skill‑regression`](skills/skill-regression/)** | End-to-end regression testing framework. Script-layer assertions + AI-layer semantic scoring. Dual backend (OpenAI-compatible LLM or OpenClaw agent). |
+| **Install** | **[`skill‑hub‑united`](skills/skill-hub-united/)** | One installer for every skill hub. |
+| **Install** | **[`skill‑hub‑query`](skills/skill-hub-query/)** | Search, install, edit any compatible hub via API. |
+| **Audit** | **[`glic‑check`](skills/glic-check/)** | Fast 4-/5-dimension quality review after every edit. |
+| **Audit** | **[`skill‑deep‑audit`](skills/skill-deep-audit/)** | Deep 7-dimension scorecard on a 115-point scale. |
+| **Audit** | **[`skill‑release‑audit`](skills/skill-release-audit/)** | Final mechanical gate before publish — no LLM, no network. |
+| **Release** | **[`skill‑sign`](skills/skill-sign/)** | Ed25519 signature proves authorship and integrity. |
+| **Release** | **[`skill‑release‑plus`](skills/skill-release-plus/)** | Sign, pack, and fan-out publish to many hubs in one command. |
+| **Documentation** | **[`skill‑introduction`](skills/skill-introduction/)** | Auto-generate a polished HTML intro page for any skill. |
+| **Testing** | **[`skill‑regression`](skills/skill-regression/)** | End-to-end regression testing with script + LLM-as-judge. |
 | Sediment | `skill‑sediment` | _Coming soon_ |
-
-### Tools at a glance
-
-**Install (2 complementary)** — one **fetches** skills onto your machine, the
-other **manages** a Hub's catalog:
-
-- **`skill‑hub‑united`** (Install · *fetch*) — one CLI to install from any of
-  clawhub.ai, skillhub.cn, skills.sh, the official Anthropic repo, or your
-  own configurable custom hub. Pure download + extract. Best when you want
-  one tool to install a skill from "wherever it lives".
-- **`skill‑hub‑query`** (Install · *manage*) — deep CRUD against a **single**
-  target Hub via a documented compatible API contract: search /
-  install / version-history inspection / safe card-metadata editing with
-  rollback. Best for driving a private / self-hosted Hub from automation, or
-  maintaining your own published skills.
-
-**Audit (3 complementary)** — different layers of skill quality:
-
-- **`glic‑check`** (Audit) — lightweight & qualitative. A fast multi-dimension
-  agent review you run right after any edit. Best for tight edit loops.
-- **`skill‑deep‑audit`** (Audit) — heavyweight & quantitative. A full
-  dryRun-level exam that grades a skill on a 115-point scale. Best as the
-  comprehensive mid-cycle check.
-- **`skill‑release‑audit`** (Audit) — mechanical static gate.
-  6 modules, no LLM, no network by default. Best as the **final automated
-  gate immediately before publishing** to clawhub / GitHub / skills.sh.
-
-**Release (2 complementary)** — one **signs**, the other **ships**:
-
-- **`skill‑sign`** (Release · *sign*) — Ed25519 cryptographic signature so
-  recipients can verify a skill is unmodified AND from the trusted author.
-  Pure stdlib Python, no `pip install`.
-- **`skill‑release‑plus`** (Release · *publish*) — multi-hub publisher.
-  Sign → Pack → fan-out to clawhub / skillhub.cn / GitHub Releases /
-  your custom user-hook in one command.
 
 ## skill-hub-united (install · fetch)
 
