@@ -21,7 +21,7 @@ Systematic quality review for code, skills, configs, and documents.
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
-- **Part of**: `build-better-skills` suite (creation → audit → release → regression → sediment)
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Audit** stage. Full pipeline: creation → install → audit → release → testing → sediment.
 
 ## Modes
 

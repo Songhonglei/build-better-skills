@@ -21,7 +21,7 @@ description: >-
 - **License**: MIT
 - **Author**: Evan Song (<https://github.com/Songhonglei>)
 - **Repository**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-hub-query>
-- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite (Install stage)
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Install** stage. Full pipeline: creation → install → audit → release → testing → sediment.
 
 > Drive any compatible Skill Hub from the command line with a single,
 > predictable interface. Works with self-hosted Hubs that implement the

@@ -1,45 +1,46 @@
 # build-better-skills
 
 > A suite of open-source skills that help you build better skills —
-> from creation through audit, release, documentation, regression testing, and sediment.
+> from creation through install, audit, release, regression testing, and sediment.
 
 Skills are how AI agents extend their own capabilities. As skill ecosystems
 mature, building good skills is itself a discipline: writing clear triggers,
-keeping doc/code in sync, catching regressions, signing releases, generating
-real user-facing docs, and promoting successful workflows into reusable skills.
+keeping doc/code in sync, catching regressions, signing releases, and
+promoting successful workflows into reusable skills.
 
 This suite ships one focused skill per stage of that lifecycle.
 
 ## Stages
 
-| Stage | Skill | Status |
-|-------|-------|--------|
-| Creation | `skill-creator` | Coming soon |
-| **Install** | **[`skill-hub-united`](skills/skill-hub-united/)** | ✅ v1.0.3 |
-| **Install** | **[`skill-hub-query`](skills/skill-hub-query/)** | ✅ **v1.0.1** |
-| **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
-| **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
-| **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.1** |
-| **Release** | **[`skill-sign`](skills/skill-sign/)** | ✅ **v1.0.0** |
-| Release | `skill-release` | Coming soon |
-| **Documentation** | **[`skill-introduction`](skills/skill-introduction/)** | ✅ **v1.0.0** |
-| **Testing** | **[`skill-regression`](skills/skill-regression/)** | ✅ **v1.0.0** |
-| Sediment | `skill-sediment` | Coming soon |
+| Stage | Skill | Description |
+|-------|-------|-------------|
+| Creation | `skill-creator` | _Coming soon_ |
+| **Install** | **[`skill-hub-united`](skills/skill-hub-united/)** | One installer for many hubs (clawhub.ai, skillhub.cn, skills.sh, anthropics/skills, your custom hub). Routes by phrasing; collision-safe extract. |
+| **Install** | **[`skill-hub-query`](skills/skill-hub-query/)** | Deep CRUD against any compatible Hub: search, install, version-history, safe card-metadata edit (GET→diff→backup→PUT→verify→rollback). |
+| **Audit** | **[`glic-check`](skills/glic-check/)** | Fast multi-dimension review you run after any edit — GLIC (4 dims) / UGLIC (5 dims). Each finding cites `file:line` with ERR/WARN/INFO severity. |
+| **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | Comprehensive 7-dimension auditor on a 115-point scale (pass ≥90 + zero ERR). L1 static (~2min) + L2 dryRun (~5min) depths; opt-in `--fix` with backup. |
+| **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | Final mechanical gate before publish — 6 static modules (no LLM, no network). Per-registry profiles (clawhub / anthropic / github / skillhub / generic). |
+| **Release** | **[`skill-sign`](skills/skill-sign/)** | Cryptographically sign and verify skills with Ed25519 (RFC 8032). Proves both integrity AND authorship; pure Python, zero `pip install`. |
+| **Release** | **[`skill-release-plus`](skills/skill-release-plus/)** | Multi-hub publisher with pluggable adapter framework. Single sign+pack pass fan-out to clawhub.com, skillhub.cn, GitHub Releases, or your custom hook. |
+| **Testing** | **[`skill-regression`](skills/skill-regression/)** | End-to-end regression testing framework. Script-layer assertions + AI-layer semantic scoring. Dual backend (OpenAI-compatible LLM or OpenClaw agent). |
+| Sediment | `skill-sediment` | _Coming soon_ |
 
-Two complementary Install tools cover different use cases — one **gets skills
-onto your machine**, the other **manages a Hub's catalog**:
+### Tools at a glance
+
+**Install (2 complementary)** — one **fetches** skills onto your machine, the
+other **manages** a Hub's catalog:
 
 - **`skill-hub-united`** (Install · *fetch*) — one CLI to install from any of
-  clawhub.ai, skills.sh, the official Anthropic repo, or your own configurable
-  custom hub. Pure download + extract. Best when you want one tool to install a
-  skill from "wherever it lives".
+  clawhub.ai, skillhub.cn, skills.sh, the official Anthropic repo, or your
+  own configurable custom hub. Pure download + extract. Best when you want
+  one tool to install a skill from "wherever it lives".
 - **`skill-hub-query`** (Install · *manage*) — deep CRUD against a **single**
   target Hub via a documented compatible API contract: search /
   install / version-history inspection / safe card-metadata editing with
   rollback. Best for driving a private / self-hosted Hub from automation, or
   maintaining your own published skills.
 
-Three complementary audit tools cover different layers of skill quality:
+**Audit (3 complementary)** — different layers of skill quality:
 
 - **`glic-check`** (Audit) — lightweight & qualitative. A fast multi-dimension
   agent review you run right after any edit. Best for tight edit loops.
@@ -50,20 +51,30 @@ Three complementary audit tools cover different layers of skill quality:
   6 modules, no LLM, no network by default. Best as the **final automated
   gate immediately before publishing** to clawhub / GitHub / skills.sh.
 
-## skill-hub-united (install)
+**Release (2 complementary)** — one **signs**, the other **ships**:
+
+- **`skill-sign`** (Release · *sign*) — Ed25519 cryptographic signature so
+  recipients can verify a skill is unmodified AND from the trusted author.
+  Pure stdlib Python, no `pip install`.
+- **`skill-release-plus`** (Release · *publish*) — multi-hub publisher.
+  Sign → Pack → fan-out to clawhub / skillhub.cn / GitHub Releases /
+  your custom user-hook in one command.
+
+## skill-hub-united (install · fetch)
 
 One installer for multiple skill hubs — picks the right source from how the
 request is phrased, and lets you plug in your own private hub.
 
-- **Sources**: clawhub (default), skills.sh, the official `anthropics/skills`
-  repo, and a configurable self-hosted `custom` hub (`SKILL_HUB_CUSTOM_URL`)
+- **Sources**: clawhub (default), skillhub.cn, skills.sh, the official
+  `anthropics/skills` repo, and a configurable self-hosted `custom` hub
+  (`SKILL_HUB_CUSTOM_URL`)
 - Structured exit codes for name conflicts, license gating, multi-skill repos,
   and missing custom-hub config
 - Path-traversal-safe extraction and strict slug validation
 
 → Read [`skills/skill-hub-united/README.md`](skills/skill-hub-united/README.md) for details.
 
-## skill-hub-query (install)
+## skill-hub-query (install · manage)
 
 Deep CRUD against a single target Hub via a documented compatible API
 contract. Use this when you operate a private / self-hosted Hub or want to
@@ -137,24 +148,20 @@ authenticity and detect tampering, even on machines that never met the author.
 
 → Read [`skills/skill-sign/README.md`](skills/skill-sign/README.md) for details.
 
-## skill-introduction (documentation · auto-generated docs page)
+## skill-release-plus (release · multi-hub publisher)
 
-Auto-generate a polished, deployable HTML introduction page from any skill's
-`USAGE.md` or `SKILL.md` — so every release ships with a real user-facing
-landing page, not just a Markdown file.
+Sign → Pack → Publish to **multiple skill hubs in one command**. Pluggable
+adapter framework lets you target any custom hub via a user-hook script.
 
-- **One command** — reads `USAGE.md` (preferred) or `SKILL.md`, parses
-  sections, generates a hero / features / quick-start / collapsible docs
-  layout with side-nav and floating install button.
-- **4 themes** — `light` (default), `aurora` (dark glass), `techblue`
-  (debug-tool), `finance` (dark blue + gold).
-- **Pluggable deploy hook** (`SKILL_INTRO_DEPLOY_CMD`) — bring your own
-  uploader; re-runs auto-update the same URL via cached dashboard id.
-- **Vendored `mistune`** (BSD-3-Clause) — block-level Markdown rendering
-  with no `pip install` required; graceful fallback to a regex renderer.
-- **XDG-compliant cache** at `~/.cache/skill-introduction/cache.json`.
+- **3 real adapters**: clawhub.com (CLI wrap), skillhub.cn (Tencent
+  Bearer multipart), GitHub Releases (git + REST API)
+- **`--target user-hook:./script.sh`** for any custom hub (subprocess + JSON envelope)
+- **Single source of truth**: one `exclude.json` + one signing pass +
+  one tar.gz, fan out to N targets
+- **Fail-open dispatch**: one target's failure does not block others
+- **Rate-limit aware** (skillhub.cn 429 auto-retry); **stdlib-only** (PyYAML optional)
 
-→ Read [`skills/skill-introduction/README.md`](skills/skill-introduction/README.md) for details.
+→ Read [`skills/skill-release-plus/README.md`](skills/skill-release-plus/README.md) for details.
 
 ## skill-regression (testing · end-to-end regression suite)
 
