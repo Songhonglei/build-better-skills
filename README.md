@@ -22,6 +22,7 @@ This suite ships one focused skill per stage of that lifecycle.
 | **Audit** | **[`skill‑release‑audit`](skills/skill-release-audit/)** | Final mechanical gate before publish — 6 static modules (no LLM, no network). Per-registry profiles (clawhub / anthropic / github / skillhub / generic). |
 | **Release** | **[`skill‑sign`](skills/skill-sign/)** | Cryptographically sign and verify skills with Ed25519 (RFC 8032). Proves both integrity AND authorship; pure Python, zero `pip install`. |
 | **Release** | **[`skill‑release‑plus`](skills/skill-release-plus/)** | Multi-hub publisher with pluggable adapter framework. Single sign+pack pass fan-out to clawhub.com, skillhub.cn, GitHub Releases, or your custom hook. |
+| **Documentation** | **[`skill‑introduction`](skills/skill-introduction/)** | Auto-generate a polished, deployable HTML intro page from any skill's `USAGE.md` or `SKILL.md`. 4 themes (light/aurora/techblue/finance); pluggable deploy hook; vendored mistune. |
 | **Testing** | **[`skill‑regression`](skills/skill-regression/)** | End-to-end regression testing framework. Script-layer assertions + AI-layer semantic scoring. Dual backend (OpenAI-compatible LLM or OpenClaw agent). |
 | Sediment | `skill‑sediment` | _Coming soon_ |
 

@@ -1,0 +1,13 @@
+# Third-Party Software Notices
+
+This product includes software developed by third parties as listed below.
+
+## mistune
+
+- **Project**: https://github.com/lepture/mistune
+- **License**: BSD 3-Clause License
+- **Copyright**: © 2014 Hsiaoming Yang
+- **Vendored at**: `vendor/mistune/`
+- **License file**: `vendor/mistune/LICENSE`
+
+Vendored unmodified to allow offline Markdown rendering without requiring `pip install mistune`. Full license text included per BSD-3-Clause Clause 1 (source redistribution).
