@@ -254,32 +254,73 @@ def extract_plugin(targz):
     return True
 
 
-def local_bundled_plugin():
-    """Prefer the skill's bundled assets/ tarball (offline install) to avoid
-    placeholder-URL blocking."""
+def local_bundled_plugin_dir():
+    """Prefer the skill's bundled `assets/plugin-source/` directory (flat-file
+    distribution, friendly to hubs that whitelist file types and reject .tar.gz).
+    Returns the directory path if it contains the entry file, else None."""
+    here = Path(__file__).resolve().parent.parent
+    src_dir = here / "assets" / "plugin-source"
+    if src_dir.is_dir() and (src_dir / ENTRY_FILE).exists():
+        return src_dir
+    return None
+
+
+def local_bundled_plugin_tarball():
+    """Legacy fallback: bundled tarball form (`assets/skill-sediment-ext.tar.gz`).
+    Older builds shipped this; new open-source builds prefer the flat directory."""
     here = Path(__file__).resolve().parent.parent
     bundled = here / "assets" / "skill-sediment-ext.tar.gz"
     return bundled if bundled.exists() else None
 
 
+def copy_plugin_dir(src_dir):
+    """Copy plugin source from a flat directory into EXTENSION_DIR. Returns bool."""
+    log(f"Copying plugin source from {src_dir} → {EXTENSION_DIR}")
+    try:
+        # Remove existing dir to avoid stale files mixing
+        if EXTENSION_DIR.exists():
+            shutil.rmtree(EXTENSION_DIR)
+        shutil.copytree(src_dir, EXTENSION_DIR)
+    except Exception as e:
+        err(f"Failed to copy plugin source: {e}")
+        return False
+    if not (EXTENSION_DIR / ENTRY_FILE).exists():
+        err(f"Entry file {ENTRY_FILE} missing after copy -- source dir may be incomplete")
+        return False
+    ok(f"Plugin source copied (entry {ENTRY_FILE} present)")
+    return True
+
+
 def ensure_plugin_files():
-    """Ensure plugin files are in place: skip when present; otherwise prefer the
-    bundled local tarball, then fall back to CDN."""
+    """Ensure plugin files are in place. Order of preference:
+      1. Already present in EXTENSION_DIR → skip
+      2. Bundled flat dir `assets/plugin-source/` (recommended; hub-friendly)
+      3. Legacy bundled tarball `assets/skill-sediment-ext.tar.gz`
+      4. CDN fallback (only if SKILL_SEDIMENT_CDN is set)
+    """
     if (EXTENSION_DIR / ENTRY_FILE).exists():
         ok("Plugin files already present; skipping download")
         return True
-    EXTENSION_DIR.mkdir(parents=True, exist_ok=True)
-    # Temp tarball lives in the extensions parent dir (.openclaw/extensions/)
+    EXTENSION_DIR.parent.mkdir(parents=True, exist_ok=True)
+
+    # Path 2: flat directory (preferred)
+    bundled_dir = local_bundled_plugin_dir()
+    if bundled_dir:
+        return copy_plugin_dir(bundled_dir)
+
+    # Path 3: legacy tarball (older bundles)
+    bundled_targz = local_bundled_plugin_tarball()
     tmp_dir = EXTENSION_DIR.parent
     tmp_dir.mkdir(parents=True, exist_ok=True)
     targz = tmp_dir / "skill-sediment-ext.tar.gz"
-
-    bundled = local_bundled_plugin()
-    if bundled:
-        log(f"Using bundled plugin tarball: {bundled}")
-        shutil.copy(bundled, targz)
+    if bundled_targz:
+        log(f"Using legacy bundled tarball: {bundled_targz}")
+        shutil.copy(bundled_targz, targz)
+        EXTENSION_DIR.mkdir(parents=True, exist_ok=True)
         return extract_plugin(targz)
 
+    # Path 4: CDN
+    EXTENSION_DIR.mkdir(parents=True, exist_ok=True)
     if not download_plugin(targz):
         return False
     return extract_plugin(targz)

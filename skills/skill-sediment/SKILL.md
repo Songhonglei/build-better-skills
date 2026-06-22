@@ -15,7 +15,7 @@ description: >
 > - **Author**: Evan Song <Songhonglei@users.noreply.github.com>
 > - **Repository**: https://github.com/Songhonglei/build-better-skills
 > - **License**: MIT — see [LICENSE](./LICENSE)
-> - **Version**: 1.0.0
+> - **Version**: 1.0.1
 
 # skill-sediment
 
@@ -29,8 +29,10 @@ successful conversation workflows into `SKILL.md` files, then promote them to `s
 - The plugin is ≈340KB of pure TypeScript source (9 files), depending only on
   OpenClaw core's built-in `plugin-sdk` + `typebox`.
 - **No embedding model required** — sediment uses LLM semantic judgement, not vector retrieval.
-- The plugin source bundle is **already embedded in `assets/skill-sediment-ext.tar.gz`** —
-  offline install works out of the box.
+- The plugin source is **already embedded in `assets/plugin-source/`** (flat directory
+  of 9 TypeScript files + `package.json` + `openclaw.plugin.json`) — offline install
+  works out of the box. A legacy `.tar.gz` fallback path is also supported for
+  backward compatibility.
 
 ## Quick Install
 

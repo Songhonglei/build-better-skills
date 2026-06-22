@@ -98,6 +98,10 @@ Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 
 ## Changelog
 
+### v1.0.1 (2026-06-22)
+
+- Replaced `assets/skill-sediment-ext.tar.gz` with flat `assets/plugin-source/` directory (9 TS files + package.json + openclaw.plugin.json) to satisfy hubs with strict file-type whitelists (e.g. skillhub.cn rejects `.tar.gz`). Legacy tarball fallback path is retained for backward compatibility.
+
 ### v1.0.0 (2026-06-22)
 
 - Initial open-source release
