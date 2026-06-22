@@ -17,7 +17,7 @@ description: >-
 
 # skill-hub-query
 
-- **Version**: 1.1.0
+- **Version**: 1.1.3
 - **License**: MIT
 - **Author**: Evan Song (<https://github.com/Songhonglei>)
 - **Repository**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-hub-query>

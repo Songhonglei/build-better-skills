@@ -17,7 +17,7 @@ description: >
 
 Systematic quality review for code, skills, configs, and documents.
 
-- **Version**: 1.0.1
+- **Version**: 1.0.4
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
