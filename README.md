@@ -16,6 +16,7 @@ This suite ships one focused skill per stage of that lifecycle.
 |-------|-------|--------|
 | Creation | `skill-creator` | Coming soon |
 | **Install** | **[`skill-hub-united`](skills/skill-hub-united/)** | ✅ v1.0.0 |
+| **Install** | **[`skill-hub-query`](skills/skill-hub-query/)** | ✅ **v1.0.0** |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
 | **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
 | **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.1** |
@@ -24,9 +25,16 @@ This suite ships one focused skill per stage of that lifecycle.
 | Testing | **[`skill-regression`](skills/skill-regression/)** | ✅ **v1.0.0** |
 | Sediment | `skill-sediment` | Coming soon |
 
-**`skill-hub-united`** (Install) gets skills onto your machine in the first
-place — from clawhub, skills.sh, the official Anthropic repo, or your own
-self-hosted hub.
+Two complementary Install tools cover different use cases:
+
+- **`skill-hub-united`** (Install) — one CLI to install from any of clawhub.ai,
+  skills.sh, the official Anthropic repo, or your own configurable custom hub.
+  Best when you want one tool to install a skill from "wherever it lives".
+- **`skill-hub-query`** (Install) — deep CRUD against a **single** target Hub
+  via a documented compatible API contract: search / install / version-history
+  inspection / safe card-metadata editing with rollback. Best for driving a
+  private / self-hosted Hub from automation, or maintaining your own
+  published skills.
 
 Three complementary audit tools cover different layers of skill quality:
 
@@ -51,6 +59,25 @@ request is phrased, and lets you plug in your own private hub.
 - Path-traversal-safe extraction and strict slug validation
 
 → Read [`skills/skill-hub-united/README.md`](skills/skill-hub-united/README.md) for details.
+
+## skill-hub-query (install)
+
+Deep CRUD against a single target Hub via a documented compatible API
+contract. Use this when you operate a private / self-hosted Hub or want to
+manage your own published skills.
+
+- **Configurable**: every endpoint, auth header, and credentials path
+  overridable via env vars (XDG-compliant by default)
+- **Dual-channel**: authenticated OpenAPI path with token; legacy
+  unauthenticated fallback without
+- **Local cache (jq, sub-ms queries)**: full + incremental sync with safe
+  server-side `updatedAt` cursor
+- **Safe install**: path-traversal-safe zip extract, atomic whole-dir replace,
+  rollback on failure
+- **Five-stage safe `edit.sh`**: GET -> diff -> backup -> PUT -> dual-channel
+  verify with retry -> auto-rollback
+
+→ Read [`skills/skill-hub-query/README.md`](skills/skill-hub-query/README.md) for details.
 
 ## glic-check (audit · fast review)
 
