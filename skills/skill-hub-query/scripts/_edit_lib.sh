@@ -18,13 +18,16 @@ umask 077
 
 # Lazy endpoint resolution: compute templates on each call so SKILL_HUB_URL set
 # after sourcing the lib is still honored, and so an unset URL produces a clear
-# error via require_hub_url() at the first network call.
+# error at the first network call.
+#
+# Callers MUST run `require_hub_url || return $?` before calling these helpers,
+# because `exit` inside a $(...) command substitution only kills the subshell.
 EDIT_PREFIX="${SKILL_HUB_EDIT_PREFIX:-${HUB_LEGACY_API_PREFIX}}"
 _edit_endpoint_tmpl() {
-  echo "$(require_hub_url)${EDIT_PREFIX}/edit"
+  echo "$(load_endpoint)${EDIT_PREFIX}/edit"
 }
 _detail_endpoint_tmpl() {
-  echo "$(require_hub_url)${EDIT_PREFIX}/detail"
+  echo "$(load_endpoint)${EDIT_PREFIX}/detail"
 }
 
 EDIT_BACKUP_DIR="${CACHE_DIR}/edit-backups"
@@ -60,7 +63,7 @@ fetch_skill_snapshot() {
   local -a auth_args
   mapfile -t auth_args < <(_auth_curl_args)
   local resp
-  resp=$(curl -sS -X PUT "$(_edit_endpoint_tmpl)/${slug}" \
+  resp=$(curl -sS --max-time 30 -X PUT "$(_edit_endpoint_tmpl)/${slug}" \
     -H "Content-Type: application/json" \
     "${auth_args[@]}" \
     -d '{}' 2>&1) || {
@@ -87,7 +90,7 @@ fetch_skill_via_detail() {
   local -a auth_args
   mapfile -t auth_args < <(_auth_curl_args)
   local resp
-  resp=$(curl -sS "${auth_args[@]}" "$(_detail_endpoint_tmpl)/${slug}" 2>&1) || return 1
+  resp=$(curl -sS --max-time 30 "${auth_args[@]}" "$(_detail_endpoint_tmpl)/${slug}" 2>&1) || return 1
 
   local code
   code=$(echo "$resp" | jq -r '.code // 0' 2>/dev/null)
@@ -221,7 +224,7 @@ apply_patch() {
   mapfile -t auth_args < <(_auth_curl_args)
 
   local resp
-  resp=$(curl -sS -X PUT "$(_edit_endpoint_tmpl)/${slug}" \
+  resp=$(curl -sS --max-time 30 -X PUT "$(_edit_endpoint_tmpl)/${slug}" \
     -H "Content-Type: application/json" \
     "${auth_args[@]}" \
     -d "$patch_json" 2>&1) || {
@@ -390,7 +393,7 @@ rollback_from_backup() {
   }' "$backup_file")
 
   local resp
-  resp=$(curl -sS -X PUT "$(_edit_endpoint_tmpl)/${slug}" \
+  resp=$(curl -sS --max-time 30 -X PUT "$(_edit_endpoint_tmpl)/${slug}" \
     -H "Content-Type: application/json" \
     "${auth_args[@]}" \
     -d "$rollback_payload" 2>&1)

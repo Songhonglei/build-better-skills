@@ -10,6 +10,17 @@ source "${SELF_DIR}/_lib.sh"
 
 setup_legacy_notice
 
+# Track diagnostic temp files for clean removal on any exit path.
+_DOCTOR_TMP_FILES=()
+_doctor_cleanup() {
+  local f
+  for f in "${_DOCTOR_TMP_FILES[@]:-}"; do
+    [[ -n "$f" ]] && rm -f "$f" 2>/dev/null
+  done
+  rm -f "${_LEGACY_NOTICE_MARKER:-}" 2>/dev/null
+}
+trap _doctor_cleanup EXIT
+
 echo "=== skill-hub-query self-check ==="
 echo ""
 
@@ -81,7 +92,7 @@ else
 # 4a) OpenAPI (requires token)
 if [[ -n "$TOKEN_SOURCE" ]]; then
   echo "  probe OpenAPI: GET ${HUB_API_PREFIX}/search?size=1 (with token)"
-  search_body="$(mktemp)"
+  search_body="$(mktemp)"; _DOCTOR_TMP_FILES+=("$search_body")
   auth_hdr="$(load_auth_header)"
   auth_scheme="$(load_auth_scheme)"
   search_http="$(curl -sSL --max-time 10 -o "$search_body" -w "%{http_code}" \
@@ -120,7 +131,7 @@ fi
 
 # 4b) Legacy fallback
 echo "  probe Legacy: GET ${HUB_LEGACY_API_PREFIX}/search?size=1 (no auth)"
-legacy_body="$(mktemp)"
+legacy_body="$(mktemp)"; _DOCTOR_TMP_FILES+=("$legacy_body")
 legacy_http="$(curl -sSL --max-time 10 -o "$legacy_body" -w "%{http_code}" \
   "${ENDPOINT}${HUB_LEGACY_API_PREFIX}/search?size=1" 2>/dev/null || echo "000")"
 case "$legacy_http" in
@@ -154,7 +165,7 @@ if [[ "${SKILL_HUB_DISABLE_EDIT:-0}" == "1" ]]; then
 else
   edit_prefix="${SKILL_HUB_EDIT_PREFIX:-${HUB_LEGACY_API_PREFIX}}"
   echo "  probe /edit endpoint: PUT ${edit_prefix}/edit/__probe__ (empty body, expect 404)"
-  edit_body="$(mktemp)"
+  edit_body="$(mktemp)"; _DOCTOR_TMP_FILES+=("$edit_body")
   edit_http="$(curl -sSL --max-time 10 -o "$edit_body" -w "%{http_code}" \
     -X PUT \
     -H "Content-Type: application/json" \

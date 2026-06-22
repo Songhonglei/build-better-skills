@@ -84,15 +84,15 @@ Then verify with `bash scripts/doctor.sh`.
 > directory, or commit it to git.
 
 ### "What's on the hub for X?"
-1. Silently `bash scripts/sync.sh` (incremental; zero HTTP if nothing changed)
-2. `bash scripts/query.sh keyword X`
+1. Silently `bash sync.sh` (incremental; zero HTTP if nothing changed)
+2. `bash query.sh keyword X`
 3. Reply with a user-readable table (**name / author / version / updated / summary**), not raw IDs
 4. If ≤5 hits include the summary; if many, list top 10 + total count
 
 ### "Install X"
-1. `bash scripts/sync.sh` then `bash scripts/query.sh slug X` to get the latest version and summary
+1. `bash sync.sh` then `bash query.sh slug X` to get the latest version and summary
 2. **Confirm first**: "Will install **{displayName}** v{latest} (author X). Proceed?"
-3. After user approves, run: `bash scripts/install.sh X --yes`
+3. After user approves, run: `bash install.sh X --yes`
 4. Without `--yes`, install.sh blocks on stdin for already-installed skills; in non-interactive mode it refuses outright — preventing silent overwrite
 5. Show: "installed; will be loaded on the next agent session"
 
@@ -123,7 +123,9 @@ Then verify with `bash scripts/doctor.sh`.
 | `SKILL_HUB_CACHE_DIR` | `${XDG_CACHE_HOME:-~/.cache}/skill-hub-query` | Where the local cache lives |
 | `SKILL_HUB_EDIT_PREFIX` | same as `SKILL_HUB_LEGACY_API_PREFIX` | Path prefix for `/edit` and `/detail` (edit.sh only) |
 | `SKILL_HUB_DISABLE_EDIT` | `0` | Set to `1` to disable `edit.sh` when your Hub does not implement `/edit` |
-| `SKILL_HUB_OWNER_EMAIL` | (auto: `git config user.email`) | Override your identity for owner pre-check |
+| `SKILL_HUB_BACKUP_RETENTION` | `20` | How many recent edit.sh backups to keep per slug (older are pruned) |
+| `SKILL_HUB_DOWNLOAD_TIMEOUT` | `120` | curl `--max-time` (seconds) for skill ZIP download in install.sh |
+| `SKILL_HUB_OWNER_EMAIL` | (auto: `git config user.email`) | Email used by edit.sh owner pre-check; override if your git identity differs from your Hub identity |
 
 ### Skills install directory
 
@@ -184,7 +186,7 @@ parsed with jq (sub-ms).
 
 > Incremental sync does NOT prune removed/withdrawn skills (it only unions
 > new records). If you hit a "found in cache but install 404s" case, run
-> `bash scripts/sync.sh --full`. The full sync log will report "pruned N removed".
+> `bash sync.sh --full`. The full sync log will report "pruned N removed".
 
 ---
 
@@ -204,22 +206,22 @@ For per-user isolation on shared hosts, configure a per-user `SKILL_HUB_TOKEN`.
 
 | User request | Action |
 |---|---|
-| "Search for calendar-related skills" | `bash scripts/sync.sh && bash scripts/query.sh keyword calendar` |
-| "What was published this week?" | `bash scripts/sync.sh && bash scripts/query.sh time this_week` |
-| "Anything on 2026-05-20?" | `bash scripts/query.sh time 2026-05-20` (single day: 00:00 - 23:59) |
-| "Between 5/18 and 5/22?" | `bash scripts/query.sh time 2026-05-18:2026-05-22` |
-| "Last week by user X?" | `bash scripts/sync.sh && bash scripts/query.sh combo --since=last_week --author=X` |
-| "**Only this account (avoid prefix collisions)**" | `bash scripts/query.sh author alice@example.com --exact` |
-| "Official skills today?" | `bash scripts/sync.sh && bash scripts/query.sh combo --since=today --source=official` |
-| "Show details of skill XX" | `bash scripts/query.sh slug XX` |
+| "Search for calendar-related skills" | `bash sync.sh && bash query.sh keyword calendar` |
+| "What was published this week?" | `bash sync.sh && bash query.sh time this_week` |
+| "Anything on 2026-05-20?" | `bash query.sh time 2026-05-20` (single day: 00:00 - 23:59) |
+| "Between 5/18 and 5/22?" | `bash query.sh time 2026-05-18:2026-05-22` |
+| "Last week by user X?" | `bash sync.sh && bash query.sh combo --since=last_week --author=X` |
+| "**Only this account (avoid prefix collisions)**" | `bash query.sh author alice@example.com --exact` |
+| "Official skills today?" | `bash sync.sh && bash query.sh combo --since=today --source=official` |
+| "Show details of skill XX" | `bash query.sh slug XX` |
 
 ### Scenario 2: install / update
 
 | User request | Action |
 |---|---|
-| "Install calendar" | 1) Check cached version 2) Confirm with user 3) After approval: `bash scripts/install.sh calendar --yes` |
-| "Update html-go-live to latest" | First `query.sh slug html-go-live` for new version + confirm with user -> after approval `bash scripts/install.sh html-go-live --yes` (`--yes` must be user-authorized) |
-| "Install html-go-live 2.4.0" | Same confirmation flow -> after approval `bash scripts/install.sh html-go-live 2.4.0 --yes` |
+| "Install calendar" | 1) Check cached version 2) Confirm with user 3) After approval: `bash install.sh calendar --yes` |
+| "Update html-go-live to latest" | First `query.sh slug html-go-live` for new version + confirm with user -> after approval `bash install.sh html-go-live --yes` (`--yes` must be user-authorized) |
+| "Install html-go-live 2.4.0" | Same confirmation flow -> after approval `bash install.sh html-go-live 2.4.0 --yes` |
 
 > `--yes` is a **user-authorization flag**; an LLM/agent caller **must not add it on its own**.
 > The user must explicitly say "yes" / "go ahead" / "install" first; SKILL.md examples in
@@ -236,8 +238,8 @@ For per-user isolation on shared hosts, configure a per-user `SKILL_HUB_TOKEN`.
 
 | User request | Action |
 |---|---|
-| "skill-hub-query is broken / I can't find anything" | `bash scripts/doctor.sh` (probes all channels and reports the precise issue) |
-| "Refresh cache / rebuild cache / prune removed skills" | `bash scripts/sync.sh --full` |
+| "skill-hub-query is broken / I can't find anything" | `bash doctor.sh` (probes all channels and reports the precise issue) |
+| "Refresh cache / rebuild cache / prune removed skills" | `bash sync.sh --full` |
 
 ### Scenario 5: edit a skill's card metadata
 
@@ -251,9 +253,9 @@ skills you own**; non-owners get 403 from the Hub.
 
 | User request | Action |
 |---|---|
-| "Show current card info for my-skill" | `bash scripts/edit.sh <slug> --show` |
-| "Change summary of my-skill to xxx" | First `--show` or `--dry-run` to confirm -> after approval: `bash scripts/edit.sh <slug> --summary "xxx" --yes` |
-| "Add tags Demo / Test to my-skill" | First `--show` to grab current tags, build the merged list -> after approval `bash scripts/edit.sh <slug> --tags "old1,old2,Demo,Test" --yes` |
+| "Show current card info for my-skill" | `bash edit.sh <slug> --show` |
+| "Change summary of my-skill to xxx" | First `--show` or `--dry-run` to confirm -> after approval: `bash edit.sh <slug> --summary "xxx" --yes` |
+| "Add tags Demo / Test to my-skill" | First `--show` to grab current tags, build the merged list -> after approval `bash edit.sh <slug> --tags "old1,old2,Demo,Test" --yes` |
 | "Change visibility of my-skill to public" | High-risk: surface the prompt to the user explicitly (including any Hub-side policy that may silently downgrade) -> after explicit approval add `--yes` |
 
 > **Agent caller rule (same as install.sh)**: `--yes` is a user-authorization
@@ -265,7 +267,7 @@ skills you own**; non-owners get 403 from the Hub.
 > additive. To append, first `--show` to read the current list, then submit
 > the merged list.
 
-> **Supported fields**: see `bash scripts/edit.sh --help` for the full list of CLI flags.
+> **Supported fields**: see `bash edit.sh --help` for the full list of CLI flags.
 
 > **Safety guarantees (five-stage flow)**:
 > 1. **GET** the authoritative current value
@@ -411,9 +413,18 @@ For direct `curl` calls, pass the auth header when you have a token:
 
 ## Changelog
 
+- **v1.0.1** (2026-06-22): UGLIC patch — all 3 ERR + 4 WARN + 2 INFO fixed.
+  - **L1 (ERR)** Fix `require_hub_url` exit-in-cmdsub trap: `endpoint="$(require_hub_url)"` silently dropped the exit because `exit` only kills the subshell. Refactored to `require_hub_url || exit $?; endpoint="$(load_endpoint)"` (api_get / api_download / edit.sh). Adds an explicit doc-comment so callers don't regress.
+  - **L2 (ERR)** All curl calls now set `--max-time`: 30s for JSON API (api_get / _edit_lib `PUT`/`GET`) and 120s for ZIP downloads (overridable via `SKILL_HUB_DOWNLOAD_TIMEOUT`). Previously a hung Hub would hang the entire skill indefinitely.
+  - **L3 (WARN)** `sync.sh` now validates the first-page response is non-empty JSON before computing `total / pages`, instead of silently reporting "Hub has 0 skill(s)" on failure.
+  - **U1 (ERR)** Auto-fixed by L1: misleading legacy-fallback notice no longer appears before the real "no Hub URL" error in sync.sh.
+  - **U2 (WARN)** `edit.sh` now calls `require_hub_url` before printing any step output (previously: empty `[edit] Hub URL :` and `[1/5] fetching...` were printed before the actual error).
+  - **U3 (INFO)** `load_auth_scheme` now auto-appends a trailing space if non-empty and missing one (so `SKILL_HUB_AUTH_SCHEME="Bearer"` works, not just `"Bearer "`); explicit empty (X-API-Key style) still keeps no space.
+  - **I1 (WARN)** Documented previously-undocumented env vars: `SKILL_HUB_BACKUP_RETENTION` (edit.sh backups) and the new `SKILL_HUB_DOWNLOAD_TIMEOUT`.
+  - **C1 (WARN)** `sync.sh` and `doctor.sh` now register `trap` EXIT handlers that prune their `mktemp` temp files on any exit path (success / error / Ctrl-C). install.sh already had one.
 - **v1.0.0** (2026-06-22): Initial open-source release of `skill-hub-query`.
   Generalized fork of an internal Hub query tool:
-  - `SKILL_HUB_URL` / `SKILL_HUB_AUTH_HEADER` / `SKILL_HUB_API_PREFIX` / `SKILL_HUB_LEGACY_API_PREFIX` env-driven configuration (defaults to clawhub.ai)
+  - `SKILL_HUB_URL` / `SKILL_HUB_AUTH_HEADER` / `SKILL_HUB_API_PREFIX` / `SKILL_HUB_LEGACY_API_PREFIX` env-driven configuration (no baked-in default; see Hub compatibility note)
   - XDG-compliant cache and credentials directories
   - Owner pre-check via `git config user.email` (no internal-network-specific paths)
   - `edit.sh` made truly optional via `SKILL_HUB_DISABLE_EDIT=1` for Hubs without `/edit` endpoint

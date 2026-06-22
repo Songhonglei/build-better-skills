@@ -129,6 +129,15 @@ load_endpoint() {
 
 # Verify a Hub URL is configured; if not, emit an actionable error and exit.
 # Most commands call this before any network operation.
+#
+# IMPORTANT: callers MUST invoke this OUTSIDE a $(...) command substitution,
+# because `exit` inside cmdsub only kills the subshell, not the parent
+# (the parent silently continues with an empty assignment). Pattern:
+#
+#     require_hub_url || exit $?       # fail-fast in current shell
+#     endpoint="$(load_endpoint)"
+#
+# Do NOT write `endpoint="$(require_hub_url)"` — that hides the exit code.
 require_hub_url() {
   local url
   url="$(load_endpoint)"
@@ -154,9 +163,9 @@ differs from the one this tool implements.)
 See: $SKILL_DIR/SKILL.md (section: "Self-hosted Hub: API contract")
      $SKILL_DIR/references/api.md
 EOF
-    exit 2
+    return 2
   fi
-  echo "$url"
+  return 0
 }
 
 # Read custom auth header / scheme from credentials file (env wins, file fills gaps)
@@ -179,20 +188,28 @@ load_auth_header() {
 
 load_auth_scheme() {
   # Distinguish "unset" from "explicitly empty" (e.g. for X-API-Key auth without prefix)
+  local scheme=""
   if [[ "${SKILL_HUB_AUTH_SCHEME+x}" == "x" ]]; then
-    echo "$SKILL_HUB_AUTH_SCHEME"
-    return 0
-  fi
-  if [[ -f "$CREDS_FILE" ]]; then
+    scheme="$SKILL_HUB_AUTH_SCHEME"
+  elif [[ -f "$CREDS_FILE" ]]; then
     local s
     s="$(jq -r '.authScheme // empty' "$CREDS_FILE" 2>/dev/null)"
     if [[ -n "$s" && "$s" != "null" ]]; then
-      # Preserve trailing space if user provided one; jq strips none
-      echo "$s"
-      return 0
+      scheme="$s"
+    else
+      scheme="Bearer "
     fi
+  else
+    scheme="Bearer "
   fi
-  echo "Bearer "
+
+  # Auto-append trailing space if non-empty and missing one (common user mistake).
+  # Header becomes "Authorization: <scheme><token>" so we always want the separator
+  # when a scheme is set; explicit empty (X-API-Key style) keeps no space.
+  if [[ -n "$scheme" && "${scheme: -1}" != " " ]]; then
+    scheme="${scheme} "
+  fi
+  echo "$scheme"
 }
 
 # ---------- Token-missing friendly error ----------
@@ -279,7 +296,7 @@ _http_get() {
   tmp_body="$(mktemp)"
   tmp_status="$(mktemp)"
 
-  local -a curl_opts=(-fsS -o "$tmp_body" -w "%{http_code}")
+  local -a curl_opts=(-fsS --max-time 30 -o "$tmp_body" -w "%{http_code}")
   if [[ -n "$token" ]]; then
     local hdr scheme
     hdr="$(load_auth_header)"
@@ -305,7 +322,8 @@ _http_get() {
 api_get() {
   local path="$1"
   local endpoint
-  endpoint="$(require_hub_url)"
+  require_hub_url || exit $?
+  endpoint="$(load_endpoint)"
 
   local token=""
   local actual_path="$path"
@@ -365,7 +383,8 @@ api_get() {
 api_download() {
   local slug="$1" version="$2" out="$3"
   local endpoint
-  endpoint="$(require_hub_url)"
+  require_hub_url || exit $?
+  endpoint="$(load_endpoint)"
 
   local url="${endpoint}${HUB_LEGACY_API_PREFIX}/download/${slug}"
   if [[ -n "$version" ]]; then
@@ -375,7 +394,9 @@ api_download() {
   fi
 
   # Drop -f so we can capture body on 4xx too; classify by HTTP code
-  local -a curl_opts=(-sSL -o "$out" -w "%{http_code}")
+  # Download: bigger budget for zip transfers. Override with SKILL_HUB_DOWNLOAD_TIMEOUT.
+  local dl_timeout="${SKILL_HUB_DOWNLOAD_TIMEOUT:-120}"
+  local -a curl_opts=(-sSL --max-time "$dl_timeout" -o "$out" -w "%{http_code}")
   local token=""
   if token="$(load_token 2>/dev/null)"; then
     local hdr scheme

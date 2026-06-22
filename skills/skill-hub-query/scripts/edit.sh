@@ -153,6 +153,9 @@ if [[ -z "$SLUG" ]]; then
   usage 1
 fi
 
+# Fail-fast if Hub URL is not configured (before any user-facing step output).
+require_hub_url || exit $?
+
 # ---------- Step 1: GET current snapshot ----------
 echo ""
 echo "[edit] target slug: $SLUG"

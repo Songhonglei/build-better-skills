@@ -16,7 +16,7 @@ This suite ships one focused skill per stage of that lifecycle.
 |-------|-------|--------|
 | Creation | `skill-creator` | Coming soon |
 | **Install** | **[`skill-hub-united`](skills/skill-hub-united/)** | ✅ v1.0.3 |
-| **Install** | **[`skill-hub-query`](skills/skill-hub-query/)** | ✅ **v1.0.0** |
+| **Install** | **[`skill-hub-query`](skills/skill-hub-query/)** | ✅ **v1.0.1** |
 | **Audit** | **[`glic-check`](skills/glic-check/)** | ✅ v1.0.1 |
 | **Audit** | **[`skill-deep-audit`](skills/skill-deep-audit/)** | ✅ v1.0.0 |
 | **Audit** | **[`skill-release-audit`](skills/skill-release-audit/)** | ✅ **v1.0.1** |

@@ -14,6 +14,19 @@ source "${SELF_DIR}/_lib.sh"
 
 setup_legacy_notice
 
+# Track temp files so EXIT trap can clean them up on any failure path.
+# Note: setup_legacy_notice already registered an EXIT trap for the legacy notice
+# marker; we replace it with a composed trap that also handles our temp files.
+_SYNC_TMP_FILES=()
+_sync_cleanup() {
+  local f
+  for f in "${_SYNC_TMP_FILES[@]:-}"; do
+    [[ -n "$f" ]] && rm -f "$f" "${f}.tmp" 2>/dev/null
+  done
+  rm -f "${_LEGACY_NOTICE_MARKER:-}" 2>/dev/null
+}
+trap _sync_cleanup EXIT
+
 MODE="${1:-auto}"
 PAGE_SIZE=100
 
@@ -31,10 +44,17 @@ full_sync() {
 
   local tmp_all
   tmp_all="$(mktemp)"
+  _SYNC_TMP_FILES+=("$tmp_all")
   echo '{}' > "$tmp_all"
 
   local first total pages
   first="$(api_get "${HUB_API_PREFIX}/search?page=1&size=${PAGE_SIZE}&orderBy=updatedAt&order=desc")"
+  if [[ -z "$first" ]] || ! echo "$first" | jq empty 2>/dev/null; then
+    echo "[error] First-page response is empty or non-JSON. Aborting sync." >&2
+    echo "        Run 'bash $SELF_DIR/doctor.sh' to verify Hub URL / token / connectivity." >&2
+    rm -f "$tmp_all"
+    exit 3
+  fi
   total="$(echo "$first" | jq -r '.data.total // 0')"
   pages=$(( (total + PAGE_SIZE - 1) / PAGE_SIZE ))
 
