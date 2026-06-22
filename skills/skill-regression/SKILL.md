@@ -15,7 +15,7 @@ description: >
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-regression
-- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Testing** stage. Full pipeline: creation → install → audit → release → testing → sediment.
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — see [Stages](https://github.com/Songhonglei/build-better-skills#stages) for the lifecycle map.
 
 ## What it does
 

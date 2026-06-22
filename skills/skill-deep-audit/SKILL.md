@@ -25,7 +25,7 @@ analysis + optional dryRun reachability checks and produces a scorecard.
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
-- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Audit** stage. Full pipeline: creation → install → audit → release → testing → sediment.
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — see [Stages](https://github.com/Songhonglei/build-better-skills#stages) for the lifecycle map.
 
 ## Design principles
 
@@ -369,29 +369,11 @@ Estimated score after fixing all ERR: {estimated}/{max}
 
 ## Part of build-better-skills
 
-This skill is part of the
-[build-better-skills](https://github.com/Songhonglei/build-better-skills)
-suite — open-source skills that help you build better skills, end-to-end:
-
-| Stage | Skill | Status | What it does |
-|-------|-------|--------|--------------|
-| Creation | `skill-creator` | 🚧 Not yet released | Scaffold a new skill from intent |
-| **Audit** | **`glic-check`** | ✅ **v1.0.x** | **Fast, qualitative multi-dimension review (G/L/I/C + U) — run right after any edit** |
-| **Audit** | **`skill-deep-audit`** | ✅ **v1.0.0** | **Comprehensive dryRun-level exam — 7 dimensions, 115-pt score, `--fix`** |
-| Testing | `skill-regression` | 🚧 Not yet released | End-to-end regression testing |
-| Sediment | `skill-sediment` | 🚧 Not yet released | Promote successful workflows into new skills |
-
-Two complementary tools share the **Audit** stage:
-
-- **`glic-check`** — lightweight, qualitative. Run it right after a change for a
-  quick multi-dimension sanity review (no score). Best for tight edit loops.
-- **`skill-deep-audit`** (this skill) — heavyweight, quantitative. A full
-  dryRun-level evaluation that grades the skill on a 115-point scale with
-  ERR/WARN findings and a scorecard. Best as a pre-ship "final exam".
-
-Only `glic-check` and `skill-deep-audit` ship today. The other entries are
-roadmap placeholders — they will appear in the suite repo as they are
-open-sourced.
+This skill belongs to the [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite.
+For the full lifecycle map (Install → Audit → Release → Testing → Sediment),
+all sibling skills, and their current status, see the
+[**Stages table**](https://github.com/Songhonglei/build-better-skills#stages) on the suite repo home — kept as the single source
+of truth (this file does not duplicate it).
 
 ## Rule references
 

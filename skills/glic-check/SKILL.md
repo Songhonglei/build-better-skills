@@ -21,7 +21,7 @@ Systematic quality review for code, skills, configs, and documents.
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
-- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Audit** stage. Full pipeline: creation → install → audit → release → testing → sediment.
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — see [Stages](https://github.com/Songhonglei/build-better-skills#stages) for the lifecycle map.
 
 ## Modes
 
@@ -134,19 +134,9 @@ After report, explicitly ask: ERR items should be fixed first, then WARN items. 
 
 ## Part of build-better-skills
 
-This skill is part of the [build-better-skills](https://github.com/Songhonglei/build-better-skills)
-suite — a collection of skills that help you build better skills, from
-creation through audit, release, regression testing, and sediment:
+This skill belongs to the [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite.
+For the full lifecycle map (Install → Audit → Release → Testing → Sediment),
+all sibling skills, and their current status, see the
+[**Stages table**](https://github.com/Songhonglei/build-better-skills#stages) on the suite repo home — kept as the single source
+of truth (this file does not duplicate it).
 
-| Skill | Stage | Status | What it does |
-|-------|-------|--------|--------------|
-| `skill-creator` | Creation | 🚧 Not yet released | Scaffold a new skill from intent |
-| **`glic-check`** | **Audit** | ✅ **v1.0.0** | **Systematic quality review (4 / 5 dimensions)** |
-| `skill-regression` | Testing | 🚧 Not yet released | End-to-end regression testing for skills |
-| `skill-release` | Release | 🚧 Not yet released | Package + publish to hubs |
-| `skill-sediment` | Sediment | 🚧 Not yet released | Promote successful workflows to skills |
-
-Only `glic-check` ships today. The other entries are roadmap placeholders —
-do not attempt to install them yet (`clawhub inspect` / `npx skills install`
-will fail with "skill not found"). They will appear on the suite repo as
-they are open-sourced.

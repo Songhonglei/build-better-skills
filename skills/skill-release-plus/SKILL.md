@@ -17,7 +17,7 @@ description: >
 **Author**: Evan Song <[github.com/Songhonglei](https://github.com/Songhonglei)>
 **Repo**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-release-plus>
 **License**: MIT (this repo) — clawhub mirror auto-uses MIT-0 (platform-enforced)  
-**Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Release** stage. Full pipeline: creation → install → audit → release → testing → sediment.
+**Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — see [Stages](https://github.com/Songhonglei/build-better-skills#stages) for the lifecycle map.
 
 Sign → Pack → Publish to **multiple skill hubs in one command**. Supports
 `clawhub.com`, `skillhub.cn` (Tencent Cloud), `GitHub Releases`, and any

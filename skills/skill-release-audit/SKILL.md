@@ -23,7 +23,7 @@ description: >
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
-- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Audit** stage. Full pipeline: creation → install → audit → release → testing → sediment.
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — see [Stages](https://github.com/Songhonglei/build-better-skills#stages) for the lifecycle map.
 
 A six-module static inspector that catches mechanical problems machines can
 verify — broken Python syntax, undeclared env vars, files written inside the
@@ -190,28 +190,9 @@ loss.
 
 ## Part of build-better-skills
 
-This skill is part of the [build-better-skills](https://github.com/Songhonglei/build-better-skills)
-suite — a complete toolchain for the full lifecycle of agent skill development.
+This skill belongs to the [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite.
+For the full lifecycle map (Install → Audit → Release → Testing → Sediment),
+all sibling skills, and their current status, see the
+[**Stages table**](https://github.com/Songhonglei/build-better-skills#stages) on the suite repo home — kept as the single source
+of truth (this file does not duplicate it).
 
-| Stage | Skill | Status | What it does |
-|---|---|---|---|
-| Creation | `skill-creator` | 🚧 Not yet released | Scaffold a new skill from intent |
-| Audit | **`glic-check`** | ✅ **v1.0.1** | Cognitive UGLIC quality review (4 / 5 dimensions) |
-| Audit | **`skill-deep-audit`** | ✅ **v1.0.0** | Heavyweight quantitative scoring (115-point scale, L1/L2 depths) |
-| **Audit** | **`skill-release-audit`** | ✅ **v1.0.0** | **Mechanical pre-publish gate (6 static-check modules)** |
-| Release | `skill-release` | 🚧 Not yet released | Package + publish to hubs |
-| Testing | `skill-regression` | 🚧 Not yet released | End-to-end regression testing |
-| Sediment | `skill-sediment` | 🚧 Not yet released | Promote successful workflows to skills |
-
-Three Audit-stage tools are **complementary**:
-
-- `glic-check` — **cognitive** lightweight review (UGLIC 5 dimensions) — agent
-  reads and judges. Use during tight edit loops.
-- `skill-deep-audit` — **cognitive** heavyweight scorecard (115-point scale,
-  7 dimensions, L1/L2 depths). Use for mid-cycle comprehensive checks.
-- `skill-release-audit` — **mechanical** static gate (6 modules, no LLM,
-  no network by default). Use as the last automated gate before publishing.
-
-Recommended workflow: `glic-check` during development →
-`skill-deep-audit` mid-cycle → `skill-release-audit` right before
-`clawhub publish` / `git push` / `npx skills publish`.

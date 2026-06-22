@@ -25,7 +25,7 @@ user phrases the request.
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
-- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Install** stage. Full pipeline: creation → install → audit → release → testing → sediment.
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — see [Stages](https://github.com/Songhonglei/build-better-skills#stages) for the lifecycle map.
 
 ## Sources
 
@@ -177,21 +177,9 @@ Set `SKILL_HUB_SKILLS_DIR` the same one-time way if your agent uses a non-standa
 
 ## Part of build-better-skills
 
-This skill is part of the
-[build-better-skills](https://github.com/Songhonglei/build-better-skills)
-suite — open-source skills that help you build better skills, end-to-end:
+This skill belongs to the [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite.
+For the full lifecycle map (Install → Audit → Release → Testing → Sediment),
+all sibling skills, and their current status, see the
+[**Stages table**](https://github.com/Songhonglei/build-better-skills#stages) on the suite repo home — kept as the single source
+of truth (this file does not duplicate it).
 
-| Stage | Skill | Status | What it does |
-|-------|-------|--------|--------------|
-| Creation | `skill-creator` | 🚧 Not yet released | Scaffold a new skill from intent |
-| **Install** | **`skill-hub-united`** | ✅ **v1.0.0** | Install skills from clawhub / skills.sh / anthropic / your own hub |
-| **Audit** | **`glic-check`** | ✅ **v1.0.x** | Fast qualitative multi-dimension review (G/L/I/C + U) |
-| **Audit** | **`skill-deep-audit`** | ✅ **v1.0.0** | Comprehensive dryRun-level exam — 7 dimensions, 115-pt score |
-| **Audit** | **`skill-release-audit`** | ✅ **v1.0.x** | Final mechanical gate — 6 static modules, no LLM/network |
-| Release | `skill-release` | 🚧 Not yet released | Package + publish to hubs |
-| Testing | `skill-regression` | 🚧 Not yet released | End-to-end regression testing |
-| Sediment | `skill-sediment` | 🚧 Not yet released | Promote successful workflows into new skills |
-
-`skill-hub-united`, `glic-check`, `skill-deep-audit`, and `skill-release-audit`
-ship today. The other entries are roadmap placeholders — they will appear in
-the suite repo as they are open-sourced.

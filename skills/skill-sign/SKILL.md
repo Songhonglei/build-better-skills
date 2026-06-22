@@ -16,7 +16,7 @@ description: >
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-sign
-- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — **Release** stage. Full pipeline: creation → install → audit → release → testing → sediment.
+- **Part of**: [`build-better-skills`](https://github.com/Songhonglei/build-better-skills) suite — see [Stages](https://github.com/Songhonglei/build-better-skills#stages) for the lifecycle map.
 
 Cryptographically sign skill directories with Ed25519, so recipients can verify
 authenticity and detect tampering — even on machines that never met the author.
