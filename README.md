@@ -24,7 +24,7 @@ This suite ships one focused skill per stage of that lifecycle.
 | **Release** | **[`skill‑release‑plus`](skills/skill-release-plus/)** | Sign, pack, and fan-out publish to many hubs in one command. |
 | **Documentation** | **[`skill‑introduction`](skills/skill-introduction/)** | Auto-generate a polished HTML intro page for any skill. |
 | **Testing** | **[`skill‑regression`](skills/skill-regression/)** | End-to-end regression testing with script + LLM-as-judge. |
-| Sediment | `skill‑sediment` | _Coming soon_ |
+| **Sediment** | **[`skill‑sediment`](skills/skill-sediment/)** | Distill successful conversations into auto-generated SKILL.md, then promote them into `skills/`. |
 
 ## skill-hub-united (install · fetch)
 
