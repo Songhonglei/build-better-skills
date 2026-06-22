@@ -12,7 +12,7 @@ description: >
 
 # skill-sign
 
-- **Version**: 1.0.2
+- **Version**: 1.0.3
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-sign

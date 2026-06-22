@@ -14,7 +14,7 @@ description: >
 
 # skill-release-plus
 
-**Version**: 1.0.2  
+**Version**: 1.0.3  
 **Author**: Evan Song <[github.com/Songhonglei](https://github.com/Songhonglei)>
 **Repo**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-release-plus>
 **License**: MIT (this repo) — clawhub mirror auto-uses MIT-0 (platform-enforced)  
