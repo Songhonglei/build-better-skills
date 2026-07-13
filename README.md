@@ -26,6 +26,7 @@ This suite ships one focused skill per stage of that lifecycle.
 | **Documentation** | **[`skill‑introduction`](skills/skill-introduction/)** | Auto-generate a polished HTML intro page for any skill. |
 | **Testing** | **[`skill‑regression`](skills/skill-regression/)** | End-to-end regression testing with script + LLM-as-judge. |
 | **Sediment** | **[`skill‑sediment`](skills/skill-sediment/)** | Distill successful conversations into auto-generated SKILL.md, then promote them into `skills/`. |
+| **Opensource** | **[`opensource‑skill‑to‑github`](skills/opensource-skill-to-github/)** | Open-source a local skill to GitHub + hubs — strip internal info, normalize, publish. |
 
 ## skill-hub-united (install · fetch)
 
@@ -148,6 +149,28 @@ report — in one pipeline.
 - **`--rerun` failures only**, **`--detail`** mode, **upload hook** for reports
 
 → Read [`skills/skill-regression/README.md`](skills/skill-regression/README.md) for details.
+
+## opensource-skill-to-github (opensource · publish to the world)
+
+The final stage of the lifecycle: take a working local skill and open-source it
+cleanly to **GitHub** (primary) + **clawhub.com** / **skillhub.cn** — without leaking
+anything internal. Fork-based, never edits the original.
+
+- **10-step workflow**: slug pre-check → fork → strip internal info → frontmatter
+  normalize → LICENSE → README/.gitignore → git init → UGLIC self-audit → GitHub push
+  → optional hub publish
+- **Configurable internal-keyword scanning**: default table holds only *generic* secrets
+  (sso_token / id_rsa / private-key markers); company-specific words are configured once
+  via `setup_profile.sh` and reused
+- **Token hygiene built in**: tokens only via env vars, never written to git/remote/memory;
+  GitHub push uses a Basic-Auth header (token never enters the remote URL) + retry + sha
+  verification; 4-tier token source
+- **Never pollutes a parent repo**: `git_init` only touches the fork's own `.git` (proven
+  even when the fork lives inside another git repo)
+- **Bundled vendor-neutral playbook**: `references/opensource_playbook.md` (16-section methodology)
+- Cross-platform (macOS bash 3.2 compatible)
+
+→ Read [`skills/opensource-skill-to-github/README.md`](skills/opensource-skill-to-github/README.md) for details.
 
 ## Install
 
