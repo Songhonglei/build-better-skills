@@ -98,9 +98,17 @@ Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 
 ## Changelog
 
+### v1.0.2 (2026-07-13)
+
+- Fixed a typo in the background skill-review prompt (`converssation` → `conversation`) that fed a misspelling into the LLM sedimentation judge
+- `enableAutoReview: false` now also skips registering the `skill_manage` tool, so a disabled plugin has zero side effects on normal sessions (previously the tool was still registered)
+- Documented that directory migration and TTL/LRU eviction intentionally run regardless of `enableAutoReview` (data maintenance)
+- Converged the `nudgeInterval` default to a single source of truth (`SKILL_NUDGE_INTERVAL`)
+- Aligned plugin core version with the skill package version
+
 ### v1.0.1 (2026-06-22)
 
-- Replaced `assets/skill-sediment-ext.tar.gz` with flat `assets/plugin-source/` directory (9 TS files + package.json + openclaw.plugin.json) to satisfy hubs with strict file-type whitelists (e.g. skillhub.cn rejects `.tar.gz`). Legacy tarball fallback path is retained for backward compatibility.
+- Replaced `assets/skill-sediment-ext.tar.gz` with a flat `assets/plugin-source/` layout for multi-hub compatibility (skillhub.cn rejects binary archives)
 
 ### v1.0.0 (2026-06-22)
 
