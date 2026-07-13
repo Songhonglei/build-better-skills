@@ -100,6 +100,14 @@ Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 
 ## Changelog
 
+### v1.0.1 (2026-07-13)
+
+- Fix `fork.sh` cp-fallback branch to clean all rsync-excluded paths
+  (`.skill-data`/`output`/`__pycache__`/`*.pyc`/`opensourceskills`); rsync branch
+  also excludes `opensourceskills/`
+- Fix `skillhub_cn_publish.sh` multipart payload truncation — write payload to a
+  temp file and read via `-F "payload=<file"` instead of an inline string
+
 ### v1.0.0 (2026-07-13)
 
 - Initial public release

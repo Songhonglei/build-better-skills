@@ -85,10 +85,15 @@ if command -v rsync >/dev/null 2>&1; then
     --exclude '*.pyc' \
     --exclude '.skill-data/' \
     --exclude 'output/' \
+    --exclude 'opensourceskills/' \
     "$SRC_DIR/" "$DST_DIR/"
 else
   cp -r "$SRC_DIR" "$DST_DIR"
-  rm -rf "$DST_DIR/node_modules" "$DST_DIR/.git" 2>/dev/null || true
+  # cp 无 --exclude，复制后逐项清理（与上方 rsync 排除项对齐，含嵌套 opensourceskills 副本）
+  rm -rf "$DST_DIR/node_modules" "$DST_DIR/.git" "$DST_DIR/__pycache__" \
+         "$DST_DIR/.skill-data" "$DST_DIR/output" "$DST_DIR/opensourceskills" 2>/dev/null || true
+  find "$DST_DIR" -name '*.pyc' -delete 2>/dev/null || true
+  find "$DST_DIR" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 fi
 echo "✅ Forked: $SRC_DIR → $DST_DIR"
 

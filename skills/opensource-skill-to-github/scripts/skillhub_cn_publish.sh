@@ -57,8 +57,10 @@ echo "🔎 校验 token 与 slug..."
 me_code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -H "$AUTH" "$API/api/v1/auth/me" 2>/dev/null || echo 000)"
 if [[ "$me_code" == "401" ]]; then echo "❌ token 无效（401）" >&2; exit 7; fi
 
-# ---- 组装 payload JSON（python 安全转义）----
-PAYLOAD="$(python3 - "$SLUG" "$NAME" "$DISPLAY" "$SUMMARY" "$DESC" "$VERSION" <<'PY'
+# ---- 组装 payload JSON（python 安全转义，写临时文件避免 curl -F 内联字符串被空格/特殊字符截断）----
+PAYLOAD_FILE="$(mktemp "${TMPDIR:-/tmp}/skh_payload.XXXXXX.json")"
+trap 'rm -f "$PAYLOAD_FILE"' EXIT
+python3 - "$SLUG" "$NAME" "$DISPLAY" "$SUMMARY" "$DESC" "$VERSION" > "$PAYLOAD_FILE" <<'PY'
 import json,sys
 slug,name,display,summary,desc,version=sys.argv[1:7]
 print(json.dumps({
@@ -67,7 +69,6 @@ print(json.dumps({
   "claimSlug":True,"joinContest":False
 },ensure_ascii=False))
 PY
-)"
 
 # ---- 收集要发的文件（白名单：只发源码；剔除无后缀文件/dotfile/archive/签名/依赖）----
 cd "$FORK"
@@ -87,7 +88,7 @@ echo "ℹ️  待发 ${#FILES[@]} 个文件: ${FILES[*]}"
 
 # ---- multipart publish ----
 CURL_ARGS=(-s --max-time 180 -X POST "$API/api/v1/community/skills/publish"
-           -H "$AUTH" -F "payload=$PAYLOAD;type=application/json")
+           -H "$AUTH" -F "payload=<$PAYLOAD_FILE;type=application/json")
 for f in "${FILES[@]}"; do CURL_ARGS+=(-F "files=@$f;type=application/octet-stream"); done
 
 echo "🚀 Publishing to skillhub.cn ..."

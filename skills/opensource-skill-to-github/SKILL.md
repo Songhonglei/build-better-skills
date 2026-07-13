@@ -12,7 +12,7 @@ description: >
 
 # Open-source a Local Skill to GitHub (+ optional clawhub.com)
 
-- **Version**: 1.0.0
+- **Version**: 1.0.1
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/opensource-skill-to-github
@@ -215,7 +215,7 @@ scripts/strip_scan.sh <fork-path>
 **Markdown body 顶部 4 行（必加）**：
 
 ```markdown
-- **Version**: 1.0.0
+- **Version**: 1.0.1
 - **License**: MIT
 - **Author**: <real name> · [github.com/<handle>](https://github.com/<handle>)
 - **Repository**: https://github.com/<handle>/<repo-name>
@@ -399,6 +399,15 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 ---
 
 ## Changelog
+
+### v1.0.1
+- **Bug fix** (surfaced while open-sourcing this skill with itself): `fork.sh` cp-fallback
+  branch only removed node_modules/.git, not the other paths the rsync branch excludes
+  (`.skill-data/output/__pycache__/*.pyc/opensourceskills`) — nested dirs leaked into the
+  copy on systems without rsync; rsync branch also now excludes `opensourceskills/`
+- **Bug fix**: `skillhub_cn_publish.sh` sent the multipart `payload` as an inline `-F` string,
+  which curl truncated into invalid JSON when displayName/summary contained spaces or
+  parentheses; now writes payload to a temp file and reads via `-F "payload=<file"`
 
 ### v1.0.0 (first public release)
 - End-to-end open-source workflow: slug pre-check → fork → strip internal info →
