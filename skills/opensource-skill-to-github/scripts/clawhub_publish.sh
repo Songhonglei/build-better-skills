@@ -9,7 +9,7 @@ if [[ -z "$FORK" ]]; then
   cat <<EOF >&2
 Usage: CLAWHUB_TOKEN=clh_xxx $0 <fork-abs-path>
 
-  example: CLAWHUB_TOKEN=clh_xxx $0 /path/to/opensourceskills/my-skill
+  example: CLAWHUB_TOKEN=clh_xxx $0 /home/node/.openclaw/workspace/opensourceskills/my-skill
 
 ⚠️  必须用绝对路径（相对路径偶发 SKILL.md required 报错）。
 ⚠️  CLAWHUB_TOKEN 与 GitHub token 完全独立；临时 token 分别撤销，长期配置分别管理。
@@ -36,7 +36,11 @@ fi
 # 仅当未登录时才要求 CLAWHUB_TOKEN 环境变量。
 CLAWHUB_ENV=()
 if clawhub whoami >/dev/null 2>&1; then
-  WHO="$(clawhub whoami 2>/dev/null | grep -v Checking | tr -d '✔ ' | tail -1)"
+  # whoami 输出解析必须容错：新版 CLI 带 spinner 行（"- Checking token" / "✔ <user>"），
+  # 且 grep 无匹配会返回非零 → 在 set -e + pipefail 下会静默杀脚本。
+  # 用 `|| true` 兜底 + 独立管道，解析失败也不影响后续发布（whoami 已确认登录成功）。
+  WHO="$(clawhub whoami 2>/dev/null | tr -d '✔' | sed -e 's/^[[:space:]-]*//' -e 's/[[:space:]]*$//' | grep -vi 'checking' | tail -1 || true)"
+  WHO="${WHO:-已登录用户}"
   echo "ℹ️  clawhub 已登录（$WHO），使用已登录态发布"
 elif [[ -n "${CLAWHUB_TOKEN:-}" ]]; then
   echo "ℹ️  clawhub 未登录，使用 CLAWHUB_TOKEN 环境变量"
@@ -48,7 +52,8 @@ else
 fi
 
 # 从 SKILL.md 提取版本（clawhub publish 强制 semver --version），缺则默认 1.0.0
-VERSION="$(grep -m1 -oP '\*\*Version\*\*:\s*\K[0-9]+\.[0-9]+\.[0-9]+' "$FORK/SKILL.md" 2>/dev/null || echo '1.0.0')"
+VERSION="$(grep -m1 -o '\*\*Version\*\*:[[:space:]]*[0-9]*\.[0-9]*\.[0-9]*' "$FORK/SKILL.md" 2>/dev/null | grep -o '[0-9]*\.[0-9]*\.[0-9]*' || echo '1.0.0')"
+VERSION="${VERSION:-1.0.0}"
 echo "ℹ️  version: $VERSION"
 
 echo "🚀 Publishing to clawhub.com ..."
