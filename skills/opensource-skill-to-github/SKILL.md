@@ -12,13 +12,13 @@ description: >
 
 # Open-source a Local Skill to GitHub (+ optional clawhub.com)
 
-- **Version**: 1.0.1
+- **Version**: 1.0.6
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/opensource-skill-to-github
 
 > 把一个本地 skill 端到端开源到 **GitHub**（主）+ **clawhub.com**（可选）。
-> 基于多个 skill 开源实践沉淀的完整方法论（见 `references/opensource_playbook.md`）+ 11 条剔除清单 + 16 项 checklist。
+> 基于 REDoc 最佳实践 v2（11 个开源 skill 沉淀）+ 11 条剔除清单 + 16 项 checklist。
 > **质量优先**：每个决策点（LICENSE / slug 冲突 / 内网信息残留 / token）必须等用户拍板。
 
 ## 设计哲学
@@ -194,11 +194,11 @@ scripts/fork.sh <source-skill-name> [<new-slug>]
 scripts/strip_scan.sh <fork-path>
 # 跑两轮:
 #  ① 文件层:列必删项当前状态（sign.key / __pycache__ / USAGE.md 重复等）
-#  ② 字面层:grep 内网关键词（公司内网域名 / 平台代号 / sso_token 等，见 strip_keywords 配置）
+#  ② 字面层:grep 内网关键词（xiaohongshu / openclaw / codewiz / sso_token 等）
 # 输出:零命中 / 命中位置清单
 ```
 
-完整 11 条清单和替换映射见 `references/strip_checklist.md`。**复杂或大量字面替换的细节场景**，可参考 `references/opensource_playbook.md` 第 3 节做深度处理（progressive disclosure）。
+完整 11 条清单和替换映射见 `references/strip_checklist.md`。**复杂或大量字面替换的细节场景**，可引用既有 skill `openclaw-skill-opensource-fork-strip-internal-and-token-hygiene` 做深度处理（progressive disclosure）。
 
 **报告输出后必须对话**：grep 命中的每一处由用户拍板「保留 / 删除 / 改写」，AI 不自决。
 
@@ -215,7 +215,7 @@ scripts/strip_scan.sh <fork-path>
 **Markdown body 顶部 4 行（必加）**：
 
 ```markdown
-- **Version**: 1.0.1
+- **Version**: 1.0.0
 - **License**: MIT
 - **Author**: <real name> · [github.com/<handle>](https://github.com/<handle>)
 - **Repository**: https://github.com/<handle>/<repo-name>
@@ -316,7 +316,7 @@ OSG_GITHUB_TOKEN=ghp_xxx scripts/github_push.sh <fork-path> <github-handle>/<rep
 
 `OSG_GITHUB_TOKEN` 可写进 profile，但这是明文 token，只在用户明确要求时使用；默认推荐 `OSG_GITHUB_TOKEN_CMD` 接 GitHub CLI 或 macOS Keychain。
 
-### 9.3 推送（带 Basic Auth 重试，适配受限网络）
+### 9.3 推送（带内网 Basic Auth 重试）
 
 ```bash
 scripts/github_push.sh <fork-path> <github-handle>/<repo-name>
@@ -327,7 +327,7 @@ scripts/github_push.sh <fork-path> <github-handle>/<repo-name>
 #   for i in 1..5: timeout 60 git -c http.extraHeader="Authorization: Basic $AUTH_B64" push origin main && break
 ```
 
-**Why Basic Auth header**：某些受限网络环境 push GitHub 时 bearer 已不认，必须用 Basic Auth header 注入；token 不进 remote URL。
+**Why Basic Auth header**：内网 push GitHub 时 bearer 已不认，必须用 Basic Auth header 注入；token 不进 remote URL（2026-06-20 实证）。
 
 push 完成后：如果本次用了临时 PAT，再次提醒用户 **去 GitHub Settings 撤销 PAT**；如果用的是 GitHub CLI / Keychain 长期配置，不要求每次撤销。
 
@@ -348,13 +348,11 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 
 ⚠️ **CLAWHUB_TOKEN 与 GitHub token 完全独立**；临时 token 分别撤销，长期配置分别管理。
 
-### 10.2 受限发布环境的 visibility（部分内网 hub 特有）
+### 10.2 敏感部门 visibility（洪磊场景特化）
 
-某些内网 hub 会把特定用户/部门标记为「受限」，禁止公开可见（常表现为静默降级为 private）。
-
-- ⛔ 该类 hub publish 不能设为 public（会强制软降级 private）
-- ✅ **禁止**自作主张加 `--visibility private` 救场——降级后 PUT edit 也可能改不回来
-- ✅ 正确做法：去掉 `--visibility` 参数让发版工具取 Hub 当前值回填
+- ⛔ CodeWiz publish 不能 `--visibility public`（强制软降级 private）
+- ✅ **禁止**自作主张加 `--visibility private` 救场——降级后 PUT edit 也改不回来
+- ✅ 正确做法：去掉 `--visibility` 参数让 release.py 取 Hub 当前值回填
 - ✅ **clawhub / GitHub / skills.sh 不受此限制**，可正常公开
 - ✅ 调 publish/edit 后**禁止信 response 字段汇报**，必须 detail + PUT edit 空 body 双查真实落库值
 
@@ -393,32 +391,31 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 - `references/readme_template.md` — README.md 模板
 - `references/uglic_quickref.md` — UGLIC 5 维速查
 - `references/precedents.md` — 11 个已开源 skill 先例 + 教学价值
-- 完整开源方法论：`references/opensource_playbook.md`（16 节全流程 + 快速 checklist）
-- 字面剔除深度场景：`references/opensource_playbook.md` 第 3 节 + `references/strip_checklist.md`
+- 内网 REDoc 完整最佳实践 v2：`bd906fe017ac9357ad5cfe01afa665e1`
+- 字面剔除深度场景：`openclaw-skill-opensource-fork-strip-internal-and-token-hygiene` skill
+- 内网 CodeWiz 发版：`skill-release-plus` skill
 
 ---
 
 ## Changelog
 
-### v1.0.1
-- **Bug fix** (surfaced while open-sourcing this skill with itself): `fork.sh` cp-fallback
-  branch only removed node_modules/.git, not the other paths the rsync branch excludes
-  (`.skill-data/output/__pycache__/*.pyc/opensourceskills`) — nested dirs leaked into the
-  copy on systems without rsync; rsync branch also now excludes `opensourceskills/`
-- **Bug fix**: `skillhub_cn_publish.sh` sent the multipart `payload` as an inline `-F` string,
-  which curl truncated into invalid JSON when displayName/summary contained spaces or
-  parentheses; now writes payload to a temp file and reads via `-F "payload=<file"`
+### v1.0.6
+- **Bug 修复（skill-to-http 开源时实测暴露）**：`clawhub_publish.sh` 在已登录态分支解析 `clawhub whoami` 输出的那行——`WHO="$(clawhub whoami | grep -v Checking | tr -d '✔ ' | tail -1)"`——在 `set -euo pipefail` 下会**静默杀死整个脚本、零输出退出**（真实 CLI 复现 rc=1）。根因：新版 clawhub CLI 把 spinner（`- Checking token` / `✔ <user>`）打到 stdout，管道下游 `tail` 提前关闭 stdout 使 `clawhub whoami` 因 SIGPIPE 非零退出，`pipefail` 采纳该非零码。修复：解析行加 `|| true` 兜底吸收管道非零 + `WHO="${WHO:-已登录用户}"` 空值兜底（whoami 前置判断已确认登录成功，用户名只是提示文案，解析失败不应阻断发布）。现象反直觉：`clawhub whoami` 单独跑明明成功、脚本却零输出退出——优先怀疑 pipefail + spinner SIGPIPE，而非登录态本身
 
-### v1.0.0 (first public release)
-- End-to-end open-source workflow: slug pre-check → fork → strip internal info →
-  frontmatter normalize → LICENSE → README/.gitignore → git init → UGLIC → GitHub push
-- Fork-based: original skill never modified; open-source copy under `opensourceskills/<slug>/`
-- Configurable internal-keyword scanning: generic defaults + user-configured company words
-  (via `setup_profile.sh` → `strip_keywords.txt` / `OSG_STRIP_KEYWORDS`)
-- git_init only touches the fork's own `.git` (never pollutes a parent repo)
-- GitHub push: Basic-Auth header (token not in remote URL) + retry + sha verification;
-  4-tier token source (GITHUB_TOKEN → OSG_GITHUB_TOKEN → OSG_GITHUB_TOKEN_CMD → `gh auth token`)
-- Optional publishers: `clawhub_publish.sh` (login-aware), `skillhub_cn_publish.sh` (multipart)
-- `run_all.sh` chains the first 6 steps
-- Bundled vendor-neutral methodology: `references/opensource_playbook.md`
-- Cross-platform (macOS bash 3.2 compatible)
+### v1.0.5
+- **Bug 修复①（agent-easy-http 开源时实测暴露）**：`git_init.sh` 传**相对路径**（如 `opensourceskills/<slug>`）时，脚本先 `cd "$FORK"` 后又在二次校验 `EXPECTED_GITDIR="$(cd "$FORK" && pwd -P)/.git"` 里对同一相对路径再 `cd` 一次 → 从新 CWD 解析失败报「没有那个文件或目录」→ git init 成功但 commit 未执行。修复：验证目录存在后**立即把 `$FORK` 解析为绝对路径**（`FORK="$(cd "$FORK" && pwd -P)"`），后续所有 `cd` / 校验均基于绝对路径，相对/绝对入参都稳定
+- **Bug 修复②（macOS BSD grep 兼容，用户 Mac 实测暴露）**：`run_all.sh` / `git_init.sh` / `skillhub_cn_publish.sh` / `clawhub_publish.sh` 共 6 处用了 `grep -oP '...\K...'`（`-P` = Perl 正则，仅 GNU grep 支持）。macOS 自带 **BSD grep 不支持 `-P`**，直接报 `invalid option -- P` 退出 → 变量解析为空 → 触发 `[[ -z ... ]]` 提前 exit（`run_all.sh` 卡在 fork 之后 / 版本号取不到）。统一改为 BSD+GNU 通用写法：`grep -o '整行前缀.*'` 抓整行 + `sed` / `grep -o` 剥前缀，效果等价 `\K` 后向剥除，全平台可移植（`-m` / `[[:space:]]` 亦 BSD/GNU 通用）
+
+### v1.0.4
+- **Bug 修复**（dogfood 自举开源时实测暴露）：`fork.sh` 的 cp 回退分支只删了 node_modules/.git，未清 rsync 分支同样排除的 `.skill-data/output/__pycache__/*.pyc/opensourceskills`，导致 rsync 不可用环境下嵌套子目录被误复制进副本；rsync 分支也补排 `opensourceskills/`
+- **Bug 修复**：`skillhub_cn_publish.sh` 用 `-F "payload=$内联字符串"` 发 multipart，当 displayName/summary 含空格或括号时被 curl 截断成非法 JSON（报 `payload JSON 格式错误`）；改为写临时文件 `-F "payload=<file"` 从文件读
+
+### v1.0.3
+- **P0 修复**：`git_init.sh` 不再用 `git rev-parse --git-dir`（会穿透父仓库），改为只认 fork 自己的 `.git` + 二次校验，修复「fork 位于 git repo 内时误提交到父仓库」的坑（跨 agent 环境必现）
+- **P0 修复**：`fork.sh` 去除 `~/.openclaw/workspace` 硬编码，支持绝对路径 + 多 agent skills 目录探测 + `OPENSOURCE_OUT_DIR`；fork 时排除 node_modules/.git/output
+- **P0 修复**：`clawhub_publish.sh` 优先用已登录态（免 token）+ 自动补 `--version`（从 SKILL.md 提取）
+- **P1**：`github_push.sh` 默认 `http.version HTTP/1.1` + `http.postBuffer 524288000`（大文件/弱网兜底）+ push 后内建 sha 验真（GitHub API 优先，ls-remote 回退）
+- **P1**：新增 `skillhub_cn_publish.sh`（腾讯 skillhub.cn target，multipart，displayName/summary 自动提取，白名单剔除 LICENSE/.gitignore/archive）
+- **P1**：`strip_scan.sh` 关键词表支持 `strip_keywords.txt` 外置文件（换公司内网词）
+- **P1**：本 skill 自身署名脱敏为 Evan Song
+- **P2**：新增 `run_all.sh` 一键串联前 6 步
