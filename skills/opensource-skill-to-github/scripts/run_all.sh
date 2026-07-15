@@ -64,7 +64,7 @@ step "Step 2/6: fork"
 FORK_OUT="$(bash "$HERE/fork.sh" "$SOURCE" "$NEW_SLUG" 2>&1)"
 echo "$FORK_OUT"
 # 优先解析机器可读行 FORK_DIR=<abspath>（不依赖中文文案）
-FORK="$(echo "$FORK_OUT" | grep -oP '^FORK_DIR=\K.+' | head -1)"
+FORK="$(echo "$FORK_OUT" | grep -o '^FORK_DIR=.*' | head -1 | sed 's/^FORK_DIR=//')"
 if [[ -z "$FORK" ]]; then
   echo "❌ fork.sh 未输出 FORK_DIR（可能目标已存在或 fork 失败），终止。" >&2
   exit 3
