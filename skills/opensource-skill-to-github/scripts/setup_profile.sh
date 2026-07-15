@@ -133,20 +133,11 @@ else
   EMAIL="$(ask "  Author email" "$DEFAULT_EMAIL")"
 
   echo ""
-  echo "🔒 公司/内网专有关键词（用于 strip_scan 剔除扫描）"
-  echo "   strip_scan 默认只带【通用】敏感词（sso_token / id_rsa / /home 等）。"
-  echo "   你可以补充【本公司专有】词：内网域名、平台名、代号等，"
-  echo "   开源前扫描会命中这些词提示你脱敏。"
-  echo "   逗号分隔，例：acme,acme.com,acme-hub,internalvpn（可留空，后续再加）"
-  STRIP_KW="$(ask "  内网关键词" "")"
-
-  echo ""
   echo "===================================================="
   echo "即将写入 $PROFILE:"
   echo "  OSG_AUTHOR_NAME=\"$NAME\""
   echo "  OSG_GITHUB_HANDLE=\"$HANDLE\""
   echo "  OSG_AUTHOR_EMAIL=\"$EMAIL\""
-  [[ -n "$STRIP_KW" ]] && echo "  内网关键词 → strip_keywords.txt: $STRIP_KW"
   echo ""
   read -r -p "确认？[y/N] " confirm
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
@@ -200,19 +191,6 @@ chmod 600 "$PROFILE"
 
 echo ""
 echo "✅ 已写入 $PROFILE (chmod 600)"
-
-# ─── 内网关键词 → strip_keywords.txt（供 strip_scan.sh 读取）─────────
-if [[ -n "${STRIP_KW:-}" ]]; then
-  KW_FILE="$(dirname "$PROFILE")/strip_keywords.txt"
-  {
-    echo "# opensource-skill-to-github — company/internal keywords for strip_scan"
-    echo "# One keyword per line; # comments and blank lines ignored."
-    echo "# Edit freely or rerun scripts/setup_profile.sh to update."
-    printf '%s\n' "$STRIP_KW" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$'
-  } > "$KW_FILE"
-  chmod 600 "$KW_FILE"
-  echo "✅ 内网关键词已写入 $KW_FILE ($(grep -vcE '^\s*(#|$)' "$KW_FILE") 词)"
-fi
 echo ""
 echo "📌 后续：所有 scripts/*.sh 自动从此 profile 读取，不需要每次输入。"
 echo "   - 查看：bash $0 --show"
