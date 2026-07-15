@@ -65,7 +65,7 @@ python3 "$HC" opensourceskills/<name>/ --target github
 ## 常见 C 维度命中
 
 - 漏删 `sign.key` / `.install-source.json`
-- README 里贴了内网链接（`*.internal.example.com`）
+- README 里贴了内网链接（`*.xiaohongshu.com`）
 - 错误日志示例里有真实内网邮箱
 - 测试 fixture 含真实 token / cookie
 - `__pycache__/` 没进 `.gitignore`
