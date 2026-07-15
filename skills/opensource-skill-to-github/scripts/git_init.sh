@@ -36,6 +36,11 @@ fi
 
 [[ -d "$FORK" ]] || { echo "❌ fork-path not a directory: $FORK" >&2; exit 2; }
 
+# 立即把 FORK 解析成绝对路径，避免后续 cd 进 FORK 后再用相对路径解析失败
+# （bug 复现：传相对路径时，cd "$FORK" 之后 EXPECTED_GITDIR 里的 cd "$FORK" 会
+#  从新 CWD 再次解析相对路径 → "没有那个文件或目录" → 二次校验崩溃，commit 未执行）
+FORK="$(cd "$FORK" && pwd -P)"
+
 cd "$FORK"
 
 # git init 带默认分支 main（新 git ≥ 2.28 支持）
@@ -83,7 +88,8 @@ if git diff --cached --quiet; then
   echo "ℹ️  Nothing to commit"
 else
   # 从 SKILL.md 提 version（如果有）
-  VERSION="$(grep -m1 -oP '\*\*Version\*\*:\s*\K[\d.]+' SKILL.md 2>/dev/null || echo "1.0.0")"
+  VERSION="$(grep -m1 -o '\*\*Version\*\*:[[:space:]]*[0-9.]*' SKILL.md 2>/dev/null | sed 's/.*Version\*\*:[[:space:]]*//' || echo "1.0.0")"
+  VERSION="${VERSION:-1.0.0}"
   git commit -m "Initial open-source release: v$VERSION" \
              -m "Forked from internal version, scrubbed per opensource-skill-to-github workflow."
   echo "✅ Initial commit: v$VERSION"
