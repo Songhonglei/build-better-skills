@@ -60,12 +60,20 @@ echo "🚀 Publishing to clawhub.com ..."
 
 # 重试（rate limit / 网络抖动 → sleep 30s 重试）
 for i in 1 2 3; do
-  if "${CLAWHUB_ENV[@]}" clawhub publish "$FORK" --version "$VERSION"; then
+  OUT="$("${CLAWHUB_ENV[@]}" clawhub publish "$FORK" --version "$VERSION" 2>&1)"; rc=$?
+  echo "$OUT"
+  if [[ $rc -eq 0 && "$OUT" != *"already exists"* ]]; then
     echo ""
     echo "✅ Published to clawhub.com ($VERSION)"
     break
   fi
-  rc=$?
+  # 幂等：版本已存在 = 上一次（或本次首轮）其实已发成功，不是错误，不重试
+  if [[ "$OUT" == *"already exists"* ]]; then
+    echo ""
+    echo "ℹ️  clawhub 上 $VERSION 已存在（视为已发布成功，跳过重试）"
+    echo "    如需重发请先 bump 版本号（clawhub 任何内容改动重发都必须换版本号）"
+    break
+  fi
   if [[ $i -lt 3 ]]; then
     echo "⚠️  Attempt $i failed (rc=$rc), retrying after 30s..."
     sleep 30
