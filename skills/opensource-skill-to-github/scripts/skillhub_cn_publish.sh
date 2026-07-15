@@ -40,10 +40,13 @@ AUTH="Authorization: Bearer $SKILLHUB_CN_TOKEN"
 
 # ---- 从 SKILL.md frontmatter 提取字段 ----
 SLUG="$(basename "$FORK")"
-NAME="$(grep -m1 -oP '^name:\s*\K.+' "$FORK/SKILL.md" 2>/dev/null || echo "$SLUG")"
-VERSION="$(grep -m1 -oP '\*\*Version\*\*:\s*\K[0-9]+\.[0-9]+\.[0-9]+' "$FORK/SKILL.md" 2>/dev/null || echo '1.0.0')"
+NAME="$(grep -m1 -o '^name:[[:space:]]*.*' "$FORK/SKILL.md" 2>/dev/null | sed 's/^name:[[:space:]]*//' || echo "$SLUG")"
+NAME="${NAME:-$SLUG}"
+VERSION="$(grep -m1 -o '\*\*Version\*\*:[[:space:]]*[0-9]*\.[0-9]*\.[0-9]*' "$FORK/SKILL.md" 2>/dev/null | grep -o '[0-9]*\.[0-9]*\.[0-9]*' || echo '1.0.0')"
+VERSION="${VERSION:-1.0.0}"
 # displayName：优先 # 一级标题，回退 name
-DISPLAY="$(grep -m1 -oP '^#\s+\K.+' "$FORK/SKILL.md" 2>/dev/null || echo "$NAME")"
+DISPLAY="$(grep -m1 -o '^#[[:space:]]*.*' "$FORK/SKILL.md" 2>/dev/null | sed 's/^#[[:space:]]*//' || echo "$NAME")"
+DISPLAY="${DISPLAY:-$NAME}"
 # description/summary：取 frontmatter description 首句（折叠多行）
 DESC="$(awk '/^description:/{f=1;sub(/^description:[ >|]*/,"");if($0!="")print;next} f&&/^[a-zA-Z_]+:/{exit} f{gsub(/^[ \t]+/,"");print}' "$FORK/SKILL.md" 2>/dev/null | tr '\n' ' ' | sed 's/  */ /g;s/ *$//')"
 [[ -z "$DESC" ]] && DESC="$DISPLAY"
