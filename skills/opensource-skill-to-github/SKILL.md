@@ -12,7 +12,7 @@ description: >
 
 # Open-source a Local Skill to GitHub (+ optional clawhub.com)
 
-- **Version**: 1.0.6
+- **Version**: 1.0.7
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/opensource-skill-to-github
@@ -398,6 +398,9 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 ---
 
 ## Changelog
+
+### v1.0.7
+- **Bug 修复（dogfood 自发时暴露）**：`clawhub_publish.sh` 把 clawhub 的 `Version X already exists` 当失败重试——首轮其实已发布成功（clawhub Latest 已更新），但重试再发时平台报"已存在"，脚本误判为失败打出 `❌ Publish failed after 3 retries`。修复：捕获 publish 输出，命中 `already exists` 时识别为**幂等成功**（跳过重试 + 提示"如需重发先 bump 版本号"），不再假报错
 
 ### v1.0.6
 - **Bug 修复（skill-to-http 开源时实测暴露）**：`clawhub_publish.sh` 在已登录态分支解析 `clawhub whoami` 输出的那行——`WHO="$(clawhub whoami | grep -v Checking | tr -d '✔ ' | tail -1)"`——在 `set -euo pipefail` 下会**静默杀死整个脚本、零输出退出**（真实 CLI 复现 rc=1）。根因：新版 clawhub CLI 把 spinner（`- Checking token` / `✔ <user>`）打到 stdout，管道下游 `tail` 提前关闭 stdout 使 `clawhub whoami` 因 SIGPIPE 非零退出，`pipefail` 采纳该非零码。修复：解析行加 `|| true` 兜底吸收管道非零 + `WHO="${WHO:-已登录用户}"` 空值兜底（whoami 前置判断已确认登录成功，用户名只是提示文案，解析失败不应阻断发布）。现象反直觉：`clawhub whoami` 单独跑明明成功、脚本却零输出退出——优先怀疑 pipefail + spinner SIGPIPE，而非登录态本身
