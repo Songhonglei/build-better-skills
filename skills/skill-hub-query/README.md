@@ -83,19 +83,4 @@ For the detailed endpoint/field reference, see
 
 ## Changelog
 
-### v1.1.0
-
-- **New built-in provider `skillhub_cn`** (`SKILL_HUB_PROVIDER=skillhub_cn`):
-  search / browse / detail / versions / install from skillhub.cn via its public
-  REST API, no auth. `edit` is intentionally unsupported (skillhub.cn card
-  metadata is an upstream mirror).
-- **Security: added `validate_slug`** — slugs are now rejected if they contain
-  `..`, path separators, or illegal characters before being used in URLs or
-  paths.
-- Docs: documented the skillhub.cn provider, capability matrix, and progressive
-  reference to `references/api.md`.
-
-### v1.0.0
-
-- Initial open-source release: generic-contract Hub CRUD (search / detail /
-  versions / install / edit) with dual-channel auth and safety-first edit flow.
+See [CHANGELOG.md](./CHANGELOG.md) for the full version history.
