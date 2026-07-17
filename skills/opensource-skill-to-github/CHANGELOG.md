@@ -3,6 +3,9 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.10 (2026-07-17)
+- Codify the changelog convention into the workflow itself: `scaffold.sh` now generates a standalone `CHANGELOG.md` (Keep a Changelog style) and the README template's Changelog section is a pointer; `strip_scan.sh` warns when SKILL.md embeds a changelog (>=2 version entries) with split guidance; SKILL.md Step 6 docs + anti-pattern table updated
+
 ### v1.0.9 (2026-07-17)
 - Docs: move changelog out of SKILL.md into this standalone CHANGELOG.md (open-source convention); README/SKILL.md keep pointers
 
