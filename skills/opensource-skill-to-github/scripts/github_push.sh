@@ -69,6 +69,10 @@ echo "ℹ️  GitHub token source: $OSG_RESOLVED_GITHUB_TOKEN_SOURCE"
 
 [[ -d "$FORK/.git" ]] || { echo "❌ Not a git repo: $FORK" >&2; exit 3; }
 
+# 发布前清理派生缓存（__pycache__/*.pyc 等，避免被 git add 进仓库）
+. "$(dirname "$0")/_lib_exclude.sh"
+osg_clean_fork "$FORK"
+
 cd "$FORK"
 
 # 添加 remote（如果不存在，URL 不含 token）
