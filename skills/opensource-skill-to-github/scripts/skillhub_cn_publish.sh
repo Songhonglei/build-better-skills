@@ -28,6 +28,10 @@ case "$FORK" in /*) ;; *) echo "❌ 必须用绝对路径" >&2; exit 2 ;; esac
 [[ -d "$FORK" ]] || { echo "❌ 不是目录: $FORK" >&2; exit 3; }
 [[ -f "$FORK/SKILL.md" ]] || { echo "❌ SKILL.md not found in $FORK" >&2; exit 4; }
 
+# 发布前清理派生缓存（__pycache__/*.pyc 等；部分 hub 会拒收 .pyc）
+. "$(dirname "$0")/_lib_exclude.sh"
+osg_clean_fork "$FORK"
+
 if [[ -z "${SKILLHUB_CN_TOKEN:-}" ]]; then
   echo "❌ SKILLHUB_CN_TOKEN 环境变量未设置" >&2
   exit 5
@@ -79,9 +83,9 @@ FILES=()
 while IFS= read -r f; do
   f="${f#./}"
   case "$f" in
-    .git/*|node_modules/*|output/*|tmp/*|assets/*.png) continue ;;   # 目录/大二进制
-    LICENSE|NOTICE|COPYING|.gitignore|.gitattributes|sign.key) continue ;;  # 平台白名单拒收
-    *.tar.gz|*.tgz|*.zip|*.bin|*.dat|*.DS_Store) continue ;;
+    .git/*|node_modules/*|output/*|tmp/*|tests/*|assets/*.png) continue ;;   # 目录/大二进制/测试产物
+    LICENSE|NOTICE|COPYING|.gitignore|.gitattributes|sign.key|.osg-exclude) continue ;;  # 平台白名单拒收/本地配置
+    *.tar.gz|*.tgz|*.zip|*.bin|*.dat|*.DS_Store|*.pyc|*.pyo|*/__pycache__/*) continue ;;
     *) FILES+=("$f") ;;
   esac
 done < <(find . -type f 2>/dev/null | sort)
