@@ -12,7 +12,7 @@ description: >
 
 # Open-source a Local Skill to GitHub (+ optional clawhub.com)
 
-- **Version**: 1.0.8
+- **Version**: 1.0.9
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/opensource-skill-to-github
@@ -402,4 +402,4 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 
 ## 版本
 
-当前 **v1.0.8**。完整版本历史见 [CHANGELOG.md](./CHANGELOG.md)。
+当前 **v1.0.9**。完整版本历史见 [CHANGELOG.md](./CHANGELOG.md)。
