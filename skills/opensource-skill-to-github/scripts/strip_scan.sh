@@ -62,6 +62,21 @@ if [[ -f "$FORK/USAGE.md" ]] && [[ -f "$FORK/SKILL.md" ]]; then
   echo "⚠️  USAGE.md 与 SKILL.md 并存（请检查是否重复，重复建议删 USAGE.md）"
 fi
 
+# Changelog 惯例检查：版本历史应放独立 CHANGELOG.md，不放 SKILL.md
+# （SKILL.md 是 agent 每次触发都读的运行时文档，历史记录浪费上下文；开源惯例也是独立文件）
+if [[ -f "$FORK/SKILL.md" ]]; then
+  _CL_HDR="$(grep -inE '^#{2,3} *(changelog|版本历史|版本记录|更新日志|变更记录|version history)' "$FORK/SKILL.md" 2>/dev/null | head -3 || true)"
+  _CL_VER="$(grep -cE '^#{2,4} *v?[0-9]+\.[0-9]+\.[0-9]+' "$FORK/SKILL.md" 2>/dev/null || true)"
+  _CL_VER="${_CL_VER:-0}"
+  if [[ -n "$_CL_HDR" && "$_CL_VER" -ge 2 ]]; then
+    echo "⚠️  SKILL.md 内嵌 changelog（$_CL_VER 条版本记录），建议拆到独立 CHANGELOG.md："
+    echo "$_CL_HDR" | sed 's/^/     L/'
+    echo "     SKILL.md/README 留一行指针: See [CHANGELOG.md](./CHANGELOG.md)"
+  else
+    echo "✅ SKILL.md 无内嵌 changelog（惯例：独立 CHANGELOG.md）"
+  fi
+fi
+
 # ─── 字面层扫描 ─────────────────────────────────
 echo ""
 echo "## ② 字面层（内网关键词 grep）"
@@ -82,29 +97,40 @@ if [[ -n "${OSG_STRIP_KEYWORDS:-}" ]]; then
   IFS=',' read -ra KEYWORDS <<< "$OSG_STRIP_KEYWORDS"
   echo "ℹ️  关键词来源: OSG_STRIP_KEYWORDS 环境变量"
 elif [[ -n "$_KW_FILE" ]]; then
-  mapfile -t KEYWORDS < <(grep -vE '^\s*(#|$)' "$_KW_FILE" | sed 's/[[:space:]]*$//')
+  # macOS 默认 bash 3.2 没有 mapfile，用 while read 兼容
+  KEYWORDS=()
+  while IFS= read -r _kw; do KEYWORDS+=("$_kw"); done \
+    < <(grep -vE '^\s*(#|$)' "$_KW_FILE" | sed 's/[[:space:]]*$//')
   echo "ℹ️  关键词来源: $_KW_FILE (${#KEYWORDS[@]} 词)"
 else
-  echo "ℹ️  关键词来源: 内置默认表（可用 OSG_STRIP_KEYWORDS 或 strip_keywords.txt 覆盖）"
+  echo "ℹ️  关键词来源: 内置通用默认表"
+  echo "   （公司专有词请用 setup_profile.sh 配置，或 OSG_STRIP_KEYWORDS / strip_keywords.txt）"
+  # 内置表只保留【跨公司通用】的敏感/内网痕迹词。
+  # 公司专有词（内网域名 / 平台代号 / 组织名等）不硬编码——由用户配置。
   KEYWORDS=(
-    "xiaohongshu"
-    "xhscdn"
-    "codewiz"
-    "redcity"
-    "aifin"
-    "openclaw"
-    "redInfo"
+    # 凭证 / 密钥痕迹
     "sso_token"
-    "/home/node"
-    "hub-skill-query"
-    "devops"
-    "picasso"
-    "dibp"
-    "finclaw"
-    "REDoc"
-    "redoc"
-    "fe.devops"
-    "fe-platform"
+    "access_token"
+    "id_rsa"
+    "BEGIN RSA PRIVATE KEY"
+    "BEGIN OPENSSH PRIVATE KEY"
+    "AWS_SECRET"
+    "PRIVATE KEY"
+    # 本机 / 容器绝对路径痕迹
+    "/home/"
+    "/Users/"
+    "/root/"
+    # 常见内网 host 形态（提示核查，不代表一定要删）
+    ".internal"
+    ".corp"
+    ".lan"
+    "localhost:"
+    "127.0.0.1"
+    "10.0."
+    "192.168."
+    # 常见内网协作/凭证文件名
+    ".netrc"
+    ".npmrc"
   )
 fi
 
