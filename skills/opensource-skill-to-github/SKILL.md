@@ -12,7 +12,7 @@ description: >
 
 # Open-source a Local Skill to GitHub (+ optional clawhub.com)
 
-- **Version**: 1.0.7
+- **Version**: 1.0.8
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/opensource-skill-to-github
@@ -321,6 +321,7 @@ OSG_GITHUB_TOKEN=ghp_xxx scripts/github_push.sh <fork-path> <github-handle>/<rep
 ```bash
 scripts/github_push.sh <fork-path> <github-handle>/<repo-name>
 # 实际执行:
+#   发布前自动清理派生缓存（_lib_exclude.sh: __pycache__/*.pyc/.DS_Store 等）
 #   token 来源: GITHUB_TOKEN → OSG_GITHUB_TOKEN → OSG_GITHUB_TOKEN_CMD → gh auth token
 #   AUTH_B64=$(printf "x-access-token:%s" "$RESOLVED_TOKEN" | base64 -w0)
 #   git remote add origin https://github.com/<handle>/<repo>.git
@@ -340,6 +341,7 @@ push 完成后：如果本次用了临时 PAT，再次提醒用户 **去 GitHub 
 ```bash
 CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 # 注意:
+#   - 发布前自动清理派生缓存（_lib_exclude.sh: __pycache__/*.pyc/.DS_Store 等）
 #   - 必须用绝对路径（相对路径偶发 SKILL.md required 报错）
 #   - clawhub 强制 LICENSE 为 MIT-0（本地 LICENSE 文件被忽略，平台特性不是 bug）
 #   - clawhub 没有 visibility 参数，用 hide/unhide 控制
@@ -398,6 +400,9 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 ---
 
 ## Changelog
+
+### v1.0.8
+- **新增 `_lib_exclude.sh` 发布前统一排除清理**：`github_push.sh` / `clawhub_publish.sh` / `skillhub_cn_publish.sh` 三个发布脚本在动手前自动物理清理派生缓存——`__pycache__/` `.pytest_cache/` `.mypy_cache/` `.ruff_cache/` `.tox/` `htmlcov/` 目录 + `*.pyc` `*.pyo` `.DS_Store` `Thumbs.db` `.coverage` 文件。解决典型坑：audit 阶段 `py_compile` 复活 `__pycache__` → 部分 hub 平台拒收 `.pyc`（此前每次都要手动 `find -name __pycache__ -exec rm`）。支持 fork 根目录放 `.osg-exclude`（每行一个 find 模式，# 注释）追加自定义排除，内置防呆拒绝 `*` / `*.py` / `SKILL.md` 等危险模式；`skillhub_cn_publish.sh` 文件收集白名单同步补 `tests/` / `*.pyc` / `__pycache__/` / `.osg-exclude` 跳过
 
 ### v1.0.7
 - **Bug 修复（dogfood 自发时暴露）**：`clawhub_publish.sh` 把 clawhub 的 `Version X already exists` 当失败重试——首轮其实已发布成功（clawhub Latest 已更新），但重试再发时平台报"已存在"，脚本误判为失败打出 `❌ Publish failed after 3 retries`。修复：捕获 publish 输出，命中 `already exists` 时识别为**幂等成功**（跳过重试 + 提示"如需重发先 bump 版本号"），不再假报错
