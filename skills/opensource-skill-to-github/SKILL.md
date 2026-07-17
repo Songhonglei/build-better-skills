@@ -12,7 +12,7 @@ description: >
 
 # Open-source a Local Skill to GitHub (+ optional clawhub.com)
 
-- **Version**: 1.0.9
+- **Version**: 1.0.10
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/opensource-skill-to-github
@@ -96,7 +96,7 @@ OSG_GITHUB_TOKEN_CMD="security find-generic-password -a $USER -s opensource-skil
 | 3. 11 条剔除清单扫描 + 拍板 | 🔧 → 💬 | `scripts/strip_scan.sh` 跑完用户拍板每处 |
 | 4. SKILL.md frontmatter 规范化 | 🔧 → 💬 | `scripts/check_frontmatter.py` + 手工 edit |
 | 5. LICENSE 拍板 + 生成 | 💬 → 🔧 | 对话选类型 → `scripts/gen_license.sh`（author 自动从 profile 读） |
-| 6. README + .gitignore 生成 | 🔧 | `scripts/scaffold.sh`（author/handle 自动从 profile 读） |
+| 6. README + CHANGELOG + .gitignore 生成 | 🔧 | `scripts/scaffold.sh`（author/handle 自动从 profile 读；changelog 独立文件） |
 | 7. 本地 git init | 🔧 | `scripts/git_init.sh`（user.name/email 自动从 profile 读） |
 | 8. UGLIC 自审（推荐） | 🔗 | 调 `glic-check` skill |
 | 9. GitHub repo 创建（用户手工）+ push | 💬 → 🔧 | 用户建 repo + `scripts/github_push.sh <fork> <repo-name>`（handle 自动拼） |
@@ -244,14 +244,21 @@ scripts/gen_license.sh <fork-path> <MIT|Apache-2.0|GPL-3.0> "<real name>" <year>
 
 ---
 
-## Step 6: README.md + .gitignore 生成
+## Step 6: README.md + CHANGELOG.md + .gitignore 生成
 
 ```bash
 scripts/scaffold.sh <fork-path>
 # 生成:
-#   README.md  ← 模板含 Quick Start / Features / Install / License / Author
-#   .gitignore ← 通用安全规则（id_rsa / *.p12 / *.keystore / certs/*.key / .env / node_modules / __pycache__ 等）
+#   README.md    ← 模板含 Quick Start / Features / Install / License / Author；Changelog 段只留指针
+#   CHANGELOG.md ← 独立版本历史（Keep a Changelog 惯例），初始含 v1.0.0 条目
+#   .gitignore   ← 通用安全规则（id_rsa / *.p12 / *.keystore / certs/*.key / .env / node_modules / __pycache__ 等）
 ```
+
+**Changelog 惯例（强约束）**：版本历史一律放独立 `CHANGELOG.md`——
+- ❌ 不放 SKILL.md：agent 每次触发都读 SKILL.md，历史记录纯属上下文浪费
+- ❌ 不堆 README：版本多了喧宾夺主
+- ✅ SKILL.md / README 各留一行指针 `See [CHANGELOG.md](./CHANGELOG.md)`
+- strip_scan.sh 会检测 SKILL.md 内嵌 changelog（≥2 条版本记录即 WARN）
 
 README 模板见 `references/readme_template.md`。
 
@@ -383,6 +390,7 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 | LICENSE 自填假名字 / 占位贡献者 | 必须问用户拍板 + 真名署名 |
 | 把内网 grep 结果直接贴 chat | 任何内网 grep 输出先脱敏再贴 |
 | frontmatter 塞 version / metadata / tags | 只留 name + description |
+| changelog 塞进 SKILL.md / 堆在 README | 独立 CHANGELOG.md，SKILL.md/README 留指针 |
 | 凭 response 字段判定 visibility 发版成功 | 必须 detail 接口二次 GET 验真 |
 | AI 自动加 `--force` / `--yes` / `--i-am-sure` | 必须用户文字确认 |
 | token 写入 git remote / memory / 日志 | token 只进环境变量或 `OSG_GITHUB_TOKEN_CMD`；profile 明文 token 仅在用户明确要求时使用 |
@@ -402,4 +410,4 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 
 ## 版本
 
-当前 **v1.0.9**。完整版本历史见 [CHANGELOG.md](./CHANGELOG.md)。
+当前 **v1.0.10**。完整版本历史见 [CHANGELOG.md](./CHANGELOG.md)。
