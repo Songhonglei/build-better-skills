@@ -71,9 +71,7 @@ $AUTHOR_NAME · [github.com/$AUTHOR_HANDLE](https://github.com/$AUTHOR_HANDLE)
 
 ## Changelog
 
-### v1.0.0 ($(date +%Y-%m-%d))
-
-- Initial release
+See [CHANGELOG.md](./CHANGELOG.md) for the full version history.
 EOF
   echo "✅ Created README.md (author=$AUTHOR_NAME handle=$AUTHOR_HANDLE)"
   if [[ "$AUTHOR_NAME" == "<your-name>" || "$AUTHOR_HANDLE" == "<your-github-handle>" ]]; then
@@ -83,6 +81,25 @@ EOF
     echo "       临时覆盖:           export OSG_AUTHOR_NAME='...' OSG_GITHUB_HANDLE='...'"
     echo "       手工编辑 README.md 也行"
   fi
+fi
+
+# ─── CHANGELOG.md ─────────────────────────────────
+# 开源惯例：版本历史放独立 CHANGELOG.md（Keep a Changelog），
+# 不放 SKILL.md（agent 每次触发都读，历史记录纯属上下文浪费），也不堆在 README。
+if [[ -f CHANGELOG.md ]]; then
+  echo "ℹ️  CHANGELOG.md already exists"
+else
+  cat > CHANGELOG.md <<EOF
+# Changelog
+
+All notable changes to this skill are documented here.
+Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
+
+### v1.0.0 ($(date +%Y-%m-%d))
+
+- Initial open-source release
+EOF
+  echo "✅ Created CHANGELOG.md"
 fi
 
 # ─── .gitignore ─────────────────────────────────
