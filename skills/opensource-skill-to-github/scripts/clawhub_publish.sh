@@ -27,6 +27,10 @@ esac
 [[ -d "$FORK" ]] || { echo "❌ fork-path not a directory: $FORK" >&2; exit 3; }
 [[ -f "$FORK/SKILL.md" ]] || { echo "❌ SKILL.md not found in $FORK" >&2; exit 4; }
 
+# 发布前清理派生缓存（__pycache__/*.pyc 等，避免进 clawhub 包）
+. "$(dirname "$0")/_lib_exclude.sh"
+osg_clean_fork "$FORK"
+
 if ! command -v clawhub >/dev/null 2>&1; then
   echo "❌ clawhub CLI 未安装，请先：npm install -g clawhub" >&2
   exit 6
