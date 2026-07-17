@@ -3,6 +3,9 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.9 (2026-07-17)
+- Docs: move changelog out of SKILL.md into this standalone CHANGELOG.md (open-source convention); README/SKILL.md keep pointers
+
 ### v1.0.8
 - **新增 `_lib_exclude.sh` 发布前统一排除清理**：`github_push.sh` / `clawhub_publish.sh` / `skillhub_cn_publish.sh` 三个发布脚本在动手前自动物理清理派生缓存——`__pycache__/` `.pytest_cache/` `.mypy_cache/` `.ruff_cache/` `.tox/` `htmlcov/` 目录 + `*.pyc` `*.pyo` `.DS_Store` `Thumbs.db` `.coverage` 文件。解决典型坑：audit 阶段 `py_compile` 复活 `__pycache__` → 部分 hub 平台拒收 `.pyc`（此前每次都要手动 `find -name __pycache__ -exec rm`）。支持 fork 根目录放 `.osg-exclude`（每行一个 find 模式，# 注释）追加自定义排除，内置防呆拒绝 `*` / `*.py` / `SKILL.md` 等危险模式；`skillhub_cn_publish.sh` 文件收集白名单同步补 `tests/` / `*.pyc` / `__pycache__/` / `.osg-exclude` 跳过
 
