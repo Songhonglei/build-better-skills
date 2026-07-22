@@ -139,9 +139,17 @@ echo "🚀 Pushing to $REMOTE_URL (with retry up to 5 times)..."
 git config http.version HTTP/1.1
 git config http.postBuffer 524288000
 
+# macOS 兼容：优先 gtimeout（brew coreutils），回退无 timeout 直接跑
+TIMEOUT_CMD=""
+if command -v gtimeout >/dev/null 2>&1; then
+  TIMEOUT_CMD="gtimeout 150"
+elif command -v timeout >/dev/null 2>&1; then
+  TIMEOUT_CMD="timeout 150"
+fi
+
 success=0
 for i in 1 2 3 4 5; do
-  if timeout 150 git -c http.extraHeader="Authorization: Basic $AUTH_B64" \
+  if $TIMEOUT_CMD git -c http.extraHeader="Authorization: Basic $AUTH_B64" \
                     push -u origin main; then
     success=1
     break
@@ -174,7 +182,10 @@ if command -v curl >/dev/null 2>&1; then
     | grep -m1 '"sha"' | sed -E 's/.*"sha"[^"]*"([0-9a-f]+)".*/\1/')"
 fi
 if [[ -z "$REMOTE_SHA" ]]; then
-  REMOTE_SHA="$(timeout 60 git -c http.extraHeader="Authorization: Basic $AUTH_B64" \
+  TIMEOUT_CMD_LS=""
+  if command -v gtimeout >/dev/null 2>&1; then TIMEOUT_CMD_LS="gtimeout 60"
+  elif command -v timeout >/dev/null 2>&1; then TIMEOUT_CMD_LS="timeout 60"; fi
+  REMOTE_SHA="$($TIMEOUT_CMD_LS git -c http.extraHeader="Authorization: Basic $AUTH_B64" \
       ls-remote origin main 2>/dev/null | awk '{print $1}')"
 fi
 
