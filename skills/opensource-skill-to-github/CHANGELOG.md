@@ -3,6 +3,12 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.13 (2026-07-22)
+- **跨平台修复（`clawhub_publish.sh` 发布在 macOS 默认 bash 3.2 下失败）**：
+  - **根因**：v1.0.12 为修 `set -u` 空数组 unbound，把发布命令前缀写成 `"${CLAWHUB_ENV[@]:-}"`。但在 macOS 默认 `/bin/bash` 3.2.57 下，`${ARR[@]:-}` 对**空数组**会展开成「1 个空单词」，使命令变成 `"" clawhub ...` → bash 去 exec 一个空命令名 → **exit 126**，被重试 3 次 × 30s 后报「Publish failed」。该路径正是**最常见**的已登录态。
+  - **修复**：彻底弃用空数组前缀，改为 `if [[ -n "${CLAWHUB_TOKEN:-}" ]]` 显式分支——`env "CLAWHUB_TOKEN=$x" clawhub ...` 或直接 `clawhub ...`。两条路径在 bash 3.2(Linux/macOS) 与 4/5 下均安全，无 unbound、无空命令名。
+  - **附带加固**：`whoami` 的 ANSI 色码剥离由 `sed 's/\x1b...//g'`（GNU-only，`\xHH` 在旧版 BSD sed 不支持）改为 `sed $'s/\033\[...//g'`（bash ANSI-C 引号提前展开 ESC 字节，GNU/BSD sed 都能匹配字面 ESC），消除旧 macOS 上的潜在残留色码。
+
 ### v1.0.12 (2026-07-22)
 - **Bug 修复（`clawhub_publish.sh` 在 `set -u` 下静默退出）**：
   1. `WHO: unbound variable`（原 line 48/52/54）——根因① `clawhub whoami` 的 spinner / ✔ 全在 **stderr**（stdout 为空），原 `2>/dev/null` 把用户名也丢了；根因② bash `set -u` 在 `[[ ]] && VAR=...` 命令替换边界会把变量「已设置」标记搞乱，下一行引用误报 unbound。修复：① `whoami` 改 `2>&1` 捕获 + 去 ANSI 色码；② 解析结果存 `WHO_PARSED`，用 `if` 而非 `&&` 赋值；③ echo 用 nounset 安全的 `${WHO:-已登录用户}`

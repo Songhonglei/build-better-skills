@@ -40,7 +40,6 @@ fi
 
 # 鉴权：优先用已登录态（clawhub login 后本地已持久化 token）；
 # 仅当未登录时才要求 CLAWHUB_TOKEN 环境变量。
-CLAWHUB_ENV=()
 if clawhub whoami >/dev/null 2>&1; then
   # whoami 输出解析必须容错：新版 CLI 带 spinner 行（"- Checking token" / "✔ <user>"），
   # 且 grep 无匹配会返回非零 → 在 set -e + pipefail 下会静默杀脚本。
@@ -49,7 +48,7 @@ if clawhub whoami >/dev/null 2>&1; then
   WHO="已登录用户"
   # 注意：clawhub whoami 的 spinner / ✔ 都在 **stderr**（stdout 为空），
   # 必须用 2>&1 捕获；管道末尾 `|| true` 防 SIGPIPE 在 pipefail 下非零杀脚本。
-  WHO_PARSED="$(clawhub whoami 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tr -d '✔' | grep -vi 'checking' | tail -1 | xargs)" || true
+  WHO_PARSED="$(clawhub whoami 2>&1 | sed $'s/\033\\[[0-9;]*m//g' | tr -d '✔' | grep -vi 'checking' | tail -1 | xargs)" || true
   # 用 if 而非 `&&` 赋值：bash set -u 在命令替换 + `&&` 边界会误把变量标为 unbound
   if [[ -n "$WHO_PARSED" ]]; then
     WHO="$WHO_PARSED"
@@ -58,7 +57,6 @@ if clawhub whoami >/dev/null 2>&1; then
   echo "ℹ️  clawhub 已登录（${WHO:-已登录用户}），使用已登录态发布"
 elif [[ -n "${CLAWHUB_TOKEN:-}" ]]; then
   echo "ℹ️  clawhub 未登录，使用 CLAWHUB_TOKEN 环境变量"
-  CLAWHUB_ENV=(env "CLAWHUB_TOKEN=$CLAWHUB_TOKEN")
 else
   echo "❌ clawhub 未登录且未设 CLAWHUB_TOKEN" >&2
   echo "   请任选：① clawhub login  ② CLAWHUB_TOKEN=clh_xxx $0 $FORK" >&2
@@ -73,9 +71,15 @@ echo "ℹ️  version: $VERSION"
 echo "🚀 Publishing to clawhub.com ..."
 
 # 重试（rate limit / 网络抖动 → sleep 30s 重试）
-# 注：${CLAWHUB_ENV[@]:-} 兜底——空数组在 set -u 下直接引用会报 unbound，加 :- 返回空
+# 注：已登录态直接 clawhub；设了 CLAWHUB_TOKEN 则前缀 env 注入。
+# 不能用空数组前缀 "${ARR[@]}"（bash 3.2/macOS 下 unbound；"${ARR[@]:-}" 又生成空命令名 → exit 126），
+# 故显式 if/else 分支，两条路径在 bash 3.2(Linux/macOS) 与 4/5 下都安全。
 for i in 1 2 3; do
-  OUT="$("${CLAWHUB_ENV[@]:-}" clawhub publish "$FORK" --version "$VERSION" 2>&1)"; rc=$?
+  if [[ -n "${CLAWHUB_TOKEN:-}" ]]; then
+    OUT="$(env "CLAWHUB_TOKEN=$CLAWHUB_TOKEN" clawhub publish "$FORK" --version "$VERSION" 2>&1)"; rc=$?
+  else
+    OUT="$(clawhub publish "$FORK" --version "$VERSION" 2>&1)"; rc=$?
+  fi
   echo "$OUT"
   if [[ $rc -eq 0 && "$OUT" != *"already exists"* ]]; then
     echo ""
