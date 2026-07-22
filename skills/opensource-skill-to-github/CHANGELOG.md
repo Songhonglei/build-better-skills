@@ -3,6 +3,14 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.12 (2026-07-22)
+- **Bug 修复（`clawhub_publish.sh` 在 `set -u` 下静默退出）**：
+  1. `WHO: unbound variable`（原 line 48/52/54）——根因① `clawhub whoami` 的 spinner / ✔ 全在 **stderr**（stdout 为空），原 `2>/dev/null` 把用户名也丢了；根因② bash `set -u` 在 `[[ ]] && VAR=...` 命令替换边界会把变量「已设置」标记搞乱，下一行引用误报 unbound。修复：① `whoami` 改 `2>&1` 捕获 + 去 ANSI 色码；② 解析结果存 `WHO_PARSED`，用 `if` 而非 `&&` 赋值；③ echo 用 nounset 安全的 `${WHO:-已登录用户}`
+  2. `CLAWHUB_ENV[@]: unbound variable`（原 line 77）——空数组在 `set -u` 下直接引用报 unbound。修复：引用改 `${CLAWHUB_ENV[@]:-}` 兜底返回空
+
+### v1.0.11 (2026-07-22)
+- **macOS 兼容修复**：`github_push.sh` 两处 `timeout` 命令在 macOS 原生不存在，改为优先 `gtimeout`（brew coreutils）→ `timeout`（GNU coreutils）→ 无超时直接跑（兜底），消除 `command not found` 导致 push 5 次重试全部假死的问题
+
 ### v1.0.10 (2026-07-17)
 - Codify the changelog convention into the workflow itself: `scaffold.sh` now generates a standalone `CHANGELOG.md` (Keep a Changelog style) and the README template's Changelog section is a pointer; `strip_scan.sh` warns when SKILL.md embeds a changelog (>=2 version entries) with split guidance; SKILL.md Step 6 docs + anti-pattern table updated
 

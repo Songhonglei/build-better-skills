@@ -2,6 +2,8 @@
 # clawhub_publish.sh — Step 10 (optional): clawhub publish
 # Usage: CLAWHUB_TOKEN=clh_xxx ./clawhub_publish.sh <fork-abs-path>
 set -euo pipefail
+# 提前声明 WHO 为空（set -u 只报「未声明」不报「空值」），避免命令替换边界下的 unbound 误报
+WHO=""
 
 FORK="${1:-}"
 
@@ -42,10 +44,18 @@ CLAWHUB_ENV=()
 if clawhub whoami >/dev/null 2>&1; then
   # whoami 输出解析必须容错：新版 CLI 带 spinner 行（"- Checking token" / "✔ <user>"），
   # 且 grep 无匹配会返回非零 → 在 set -e + pipefail 下会静默杀脚本。
-  # 用 `|| true` 兜底 + 独立管道，解析失败也不影响后续发布（whoami 已确认登录成功）。
-  WHO="$(clawhub whoami 2>/dev/null | tr -d '✔' | sed -e 's/^[[:space:]-]*//' -e 's/[[:space:]]*$//' | grep -vi 'checking' | tail -1 || true)"
-  WHO="${WHO:-已登录用户}"
-  echo "ℹ️  clawhub 已登录（$WHO），使用已登录态发布"
+  # 先给 WHO 默认值（避免 set -u 下 unbound variable），解析结果单独存 WHO_PARSED，
+  # 非空才覆盖；管道失败用 `|| true` 兜底，不影响后续发布（whoami 已确认登录成功）。
+  WHO="已登录用户"
+  # 注意：clawhub whoami 的 spinner / ✔ 都在 **stderr**（stdout 为空），
+  # 必须用 2>&1 捕获；管道末尾 `|| true` 防 SIGPIPE 在 pipefail 下非零杀脚本。
+  WHO_PARSED="$(clawhub whoami 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tr -d '✔' | grep -vi 'checking' | tail -1 | xargs)" || true
+  # 用 if 而非 `&&` 赋值：bash set -u 在命令替换 + `&&` 边界会误把变量标为 unbound
+  if [[ -n "$WHO_PARSED" ]]; then
+    WHO="$WHO_PARSED"
+  fi
+  # echo 用 ${WHO:-默认}：nounset 安全，即使极端情况下 WHO 未设置也不报错
+  echo "ℹ️  clawhub 已登录（${WHO:-已登录用户}），使用已登录态发布"
 elif [[ -n "${CLAWHUB_TOKEN:-}" ]]; then
   echo "ℹ️  clawhub 未登录，使用 CLAWHUB_TOKEN 环境变量"
   CLAWHUB_ENV=(env "CLAWHUB_TOKEN=$CLAWHUB_TOKEN")
@@ -63,8 +73,9 @@ echo "ℹ️  version: $VERSION"
 echo "🚀 Publishing to clawhub.com ..."
 
 # 重试（rate limit / 网络抖动 → sleep 30s 重试）
+# 注：${CLAWHUB_ENV[@]:-} 兜底——空数组在 set -u 下直接引用会报 unbound，加 :- 返回空
 for i in 1 2 3; do
-  OUT="$("${CLAWHUB_ENV[@]}" clawhub publish "$FORK" --version "$VERSION" 2>&1)"; rc=$?
+  OUT="$("${CLAWHUB_ENV[@]:-}" clawhub publish "$FORK" --version "$VERSION" 2>&1)"; rc=$?
   echo "$OUT"
   if [[ $rc -eq 0 && "$OUT" != *"already exists"* ]]; then
     echo ""
