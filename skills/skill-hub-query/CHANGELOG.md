@@ -2,6 +2,9 @@
 
 All notable changes to this skill are documented here.
 
+### v1.1.5 (2026-07-28)
+- Maintenance release (version bump only). Reviewed against clawhub SkillSpector findings; the flagged `xargs -r rm` is confirmed a false positive — it only prunes this skill's own edit-backup snapshots under a controlled `EDIT_BACKUP_DIR` (retention rotation), so no code change was needed.
+
 ### v1.1.4 (2026-07-17)
 - Docs: move changelog out of SKILL.md into this standalone CHANGELOG.md (open-source convention)
 - **v1.0.1** (2026-06-22): UGLIC patch — all 3 ERR + 4 WARN + 2 INFO fixed.
