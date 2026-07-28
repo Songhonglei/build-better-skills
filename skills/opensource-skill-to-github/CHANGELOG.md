@@ -3,6 +3,12 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.14 (2026-07-28)
+- **安全措辞与注释加固（响应 clawhub SkillSpector review，无功能变化）**：
+  - `_lib_profile.sh`：在通过 `sh -c "$OSG_GITHUB_TOKEN_CMD"` 取 token 的分支上方补安全注释，明确该值仅应来自用户可信 profile / 环境变量，等同 shell rc 中的命令，不得赋以外部/不可信输入。
+  - `setup_profile.sh`：收紧明文 token（`OSG_GITHUB_TOKEN="ghp_xxx"`）选项的注释——标注仅限隔离本地环境、用户明确要求时使用，生产禁用，优先命令式取 token。
+  - `SKILL.md`：memory 沉淀章节新增红线声明——复盘笔记严禁写入任何 token/secret/明文凭证及内网路径/域名/平台代号，与 token 绝不落盘的硬规则对齐，消除审查指出的「规则自相矛盾」。
+
 ### v1.0.13 (2026-07-22)
 - **跨平台修复（`clawhub_publish.sh` 发布在 macOS 默认 bash 3.2 下失败）**：
   - **根因**：v1.0.12 为修 `set -u` 空数组 unbound，把发布命令前缀写成 `"${CLAWHUB_ENV[@]:-}"`。但在 macOS 默认 `/bin/bash` 3.2.57 下，`${ARR[@]:-}` 对**空数组**会展开成「1 个空单词」，使命令变成 `"" clawhub ...` → bash 去 exec 一个空命令名 → **exit 126**，被重试 3 次 × 30s 后报「Publish failed」。该路径正是**最常见**的已登录态。
