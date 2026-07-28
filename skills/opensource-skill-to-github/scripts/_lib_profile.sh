@@ -97,6 +97,10 @@ osg_resolve_github_token() {
     return 0
   fi
 
+  # 安全说明：OSG_GITHUB_TOKEN_CMD 的值仅应来自用户自己的可信 profile
+  # （profile.env / 环境变量），语义等同于用户 shell rc 里写的命令，用于对接
+  # `gh auth token` 或系统 keychain 等安全取 token 方式。切勿把不可信/外部
+  # 传入的字符串赋给此变量——它会被 `sh -c` 执行，等同本机命令执行权限。
   if [[ -n "${OSG_GITHUB_TOKEN_CMD:-}" ]]; then
     local cmd_token
     cmd_token="$((sh -c "$OSG_GITHUB_TOKEN_CMD" 2>/dev/null || true) | awk 'NF {print; exit}' | tr -d '\r\n')"
