@@ -12,7 +12,7 @@ description: >
 
 # Open-source a Local Skill to GitHub (+ optional clawhub.com)
 
-- **Version**: 1.0.13
+- **Version**: 1.0.14
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/opensource-skill-to-github
@@ -376,6 +376,8 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 - 关联：指向上一个开源 skill 的 memory（链式继承）
 
 通用经验沉淀到 `feedback_*.md`。
+
+> ⚠️ **沉淀内容红线**：memory 笔记只记「决策与经验」，**严禁写入任何 token / secret / 明文凭证，也不要抄录内部路径、内网域名、平台代号等敏感上下文**。这与 §8「token 绝不落盘到 git/remote/memory」的硬规则一致——发布后的复盘笔记同样受此约束。
 
 ---
 
