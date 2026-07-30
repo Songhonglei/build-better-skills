@@ -3,6 +3,11 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.16 (2026-07-30)
+- **热修复 `skillhub_cn_publish.sh` 的 `set -e` 崩溃（v1.0.15 引入）**：
+  - **根因**：v1.0.15 的两级版本提取里，`grep` 无匹配时返回非零，在 `set -euo pipefail` 下直接中断脚本——对「只有正文 `**Version**`、无 frontmatter `version:`」的 skill（本 skill 自己就是）必崩，无任何报错输出。
+  - **修复**：两处 `grep` 管道补 `|| true`，无匹配时安全返回空串走回退逻辑。四种场景 + set -e 实跑均验证通过。
+
 ### v1.0.15 (2026-07-30)
 - **`skillhub_cn_publish.sh` 版本提取修复（优先读 frontmatter）**：
   - **根因**：v1.0.14 及之前版本提取只匹配正文 `**Version**: x.y.z`，但部分 skill（如 invoice-auto-forward）只在 frontmatter 声明 `version: x.y.z`、正文无 Version 行，导致发布时回退成错误的 `1.0.0`，每次都要手动补正文行。
