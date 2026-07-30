@@ -3,6 +3,11 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.15 (2026-07-30)
+- **`skillhub_cn_publish.sh` 版本提取修复（优先读 frontmatter）**：
+  - **根因**：v1.0.14 及之前版本提取只匹配正文 `**Version**: x.y.z`，但部分 skill（如 invoice-auto-forward）只在 frontmatter 声明 `version: x.y.z`、正文无 Version 行，导致发布时回退成错误的 `1.0.0`，每次都要手动补正文行。
+  - **修复**：改为两级提取——优先 frontmatter `version:` 字段 → 回退正文 `**Version**: x.y.z` → 最终兜底 `1.0.0`。四种场景（仅 frontmatter / 仅正文 / 两者都有取 frontmatter / 都没有）均验证通过。
+
 ### v1.0.14 (2026-07-28)
 - **安全措辞与注释加固（响应 clawhub SkillSpector review，无功能变化）**：
   - `_lib_profile.sh`：在通过 `sh -c "$OSG_GITHUB_TOKEN_CMD"` 取 token 的分支上方补安全注释，明确该值仅应来自用户可信 profile / 环境变量，等同 shell rc 中的命令，不得赋以外部/不可信输入。
