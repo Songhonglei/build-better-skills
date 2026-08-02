@@ -88,7 +88,7 @@ FILES=()
 while IFS= read -r f; do
   f="${f#./}"
   case "$f" in
-    .git/*|node_modules/*|output/*|tmp/*|tests/*|assets/*.png) continue ;;   # 目录/大二进制/测试产物
+    .git/*|node_modules/*|output/*|tmp/*|tests/*|assets/*.png|assets/*.jpg|assets/*.jpeg|assets/*.webp) continue ;;   # 目录/大二进制/测试产物/预览图
     LICENSE|NOTICE|COPYING|.gitignore|.gitattributes|sign.key|.osg-exclude) continue ;;  # 平台白名单拒收/本地配置
     *.tar.gz|*.tgz|*.zip|*.bin|*.dat|*.DS_Store|*.pyc|*.pyo|*/__pycache__/*) continue ;;
     *) FILES+=("$f") ;;

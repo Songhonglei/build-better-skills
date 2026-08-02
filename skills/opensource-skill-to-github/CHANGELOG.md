@@ -3,6 +3,13 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.17 (2026-08-03)
+- **新增 mono-repo 安全护栏**：
+  - **背景**：2026-08-02 `better-office-work-flow` 仓库被本流程冲掉——把单个 skill 当 repo 根目录推到 main，force-overwrite 了 `skills/` 下的 4 个 skill（事后从孤立提交 `63ae4858` 恢复）。
+  - **修复**：`github_push.sh` 推送前检测目标 repo 根目录是否含 `skills/` 目录，若是则 **exit 8 拒绝推送**，并给出「子目录模式」手动发布指引（clone → 放进 `skills/<slug>/` → commit → push）。设 `OSG_ALLOW_MONOREPO_OVERWRITE=1` 可显式放行。
+  - **SKILL.md** Step 9 同步加告警。
+- **修正 Repository 地址**：从不存在的 `github.com/Songhonglei/opensource-skill-to-github` 改为正确的 mono-repo 路径 `github.com/Songhonglei/build-better-skills/tree/main/skills/opensource-skill-to-github`。
+
 ### v1.0.16 (2026-07-30)
 - **热修复 `skillhub_cn_publish.sh` 的 `set -e` 崩溃（v1.0.15 引入）**：
   - **根因**：v1.0.15 的两级版本提取里，`grep` 无匹配时返回非零，在 `set -euo pipefail` 下直接中断脚本——对「只有正文 `**Version**`、无 frontmatter `version:`」的 skill（本 skill 自己就是）必崩，无任何报错输出。

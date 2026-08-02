@@ -181,9 +181,7 @@ cat > "$PROFILE" <<EOF
 # - 推荐：OSG_GITHUB_TOKEN_CMD="gh auth token"
 # - 或 macOS Keychain：
 #   OSG_GITHUB_TOKEN_CMD="security find-generic-password -a \$USER -s opensource-skill-to-github.github-token -w"
-# - 不推荐（仅隔离本地环境、用户明确要求时）：OSG_GITHUB_TOKEN="ghp_xxx"
-#   ⚠️ 明文写入本文件有泄露风险（备份/误分享/本地被入侵），生产环境禁用；
-#   务必 chmod 600，并优先改用上面两种命令式取 token 方式。
+# - 不推荐但支持：OSG_GITHUB_TOKEN="ghp_xxx"（明文写入本文件，务必 chmod 600）
 
 OSG_AUTHOR_NAME="$(esc "$NAME")"
 OSG_GITHUB_HANDLE="$(esc "$HANDLE")"

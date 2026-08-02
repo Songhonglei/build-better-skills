@@ -132,6 +132,54 @@ else
   echo "ℹ️  curl 不可用，跳过预探测"
 fi
 
+# ─── mono-repo 安全护栏：检测目标 repo 是否已含 skills/ 多 skill 结构 ───
+# 背景：2026-08-02 better-office-work-flow 仓库被本流程冲掉（skills/ 4 个 skill → 1 个）
+# 本流程把单个 skill 当 repo 根目录推到 main，会 force-overwrite mono-repo 结构。
+if command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+  echo ""
+  echo "🔎 检测目标 repo 是否为 mono-repo（根目录含 skills/ 目录）..."
+  ROOT_JSON="$(curl -s --max-time 15 \
+    -H "Authorization: Basic $AUTH_B64" \
+    -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/$REPO/contents/" 2>/dev/null || echo "")"
+  HAS_SKILLS_DIR="$(printf '%s' "$ROOT_JSON" | python3 -c '
+import sys, json
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    print("False"); sys.exit()
+if not isinstance(d, list):
+    print("False"); sys.exit()
+print("True" if any(isinstance(x, dict) and x.get("name") == "skills" and x.get("type") == "dir" for x in d) else "False")
+' 2>/dev/null)"
+  HAS_SKILLS_DIR="${HAS_SKILLS_DIR:-False}"
+  if [[ "$HAS_SKILLS_DIR" == "True" ]]; then
+    cat >&2 <<EOF
+❌❌ 检测到目标 repo $REPO 是 mono-repo（根目录含 skills/ 目录）！
+
+   本流程会把单个 skill 当 repo 根目录推到 main，这会 force-overwrite 掉
+   skills/ 里的所有其它 skill（2026-08-02 better-office-work-flow 仓库就是
+   这样被冲掉的：4 个 skill → 1 个，事后从孤立提交 63ae4858 才恢复）。
+
+   对 mono-repo，请改用「子目录模式」手动发布：
+     1. git clone https://github.com/$REPO.git /tmp/mono-repo
+     2. rsync -a --exclude=.git <fork>/ /tmp/mono-repo/skills/<slug>/
+     3. cd /tmp/mono-repo && git add -A && git commit -m "update <slug>" \\
+        && git push origin main
+     4. 删除 /tmp/mono-repo
+
+   如确需覆盖（清空 repo 只留这一个 skill），显式设环境变量再跑：
+     OSG_ALLOW_MONOREPO_OVERWRITE=1 $0 ...
+EOF
+    if [[ -z "${OSG_ALLOW_MONOREPO_OVERWRITE:-}" ]]; then
+      exit 8
+    fi
+    echo "⚠️  OSG_ALLOW_MONOREPO_OVERWRITE=1 已设置，继续覆盖（危险！）" >&2
+  else
+    echo "✅ 目标 repo 非 mono-repo（无 skills/ 目录），可安全 push"
+  fi
+fi
+
 echo ""
 echo "🚀 Pushing to $REMOTE_URL (with retry up to 5 times)..."
 
