@@ -19,7 +19,7 @@ This suite ships one focused skill per stage of that lifecycle.
 | **Install** | **[`skill‑hub‑united`](skills/skill-hub-united/)** | One installer for every skill hub. |
 | **Install** | **[`skill‑hub‑query`](skills/skill-hub-query/)** | Search, install, edit any compatible hub via API. |
 | **Audit** | **[`glic‑check`](skills/glic-check/)** | Fast 4-/5-dimension quality review after every edit. |
-| **Audit** | **[`skill‑deep‑audit`](skills/skill-deep-audit/)** | Deep 7-dimension scorecard on a 115-point scale. |
+| **Audit** | **[`skill‑deep‑audit`](skills/skill-deep-audit/)** | Deep 7-dimension scorecard on a 120-point scale. |
 | **Audit** | **[`skill‑release‑audit`](skills/skill-release-audit/)** | Final mechanical gate before publish — no LLM, no network. |
 | **Release** | **[`skill‑sign`](skills/skill-sign/)** | Ed25519 signature proves authorship and integrity. |
 | **Release** | **[`skill‑release‑plus`](skills/skill-release-plus/)** | Sign, pack, and fan-out publish to many hubs in one command. |
@@ -75,7 +75,7 @@ with explicit escalation rules (silent-failure = ERR, repeated WARN → ERR).
 
 ## skill-deep-audit (audit · comprehensive exam)
 
-A read-only, multi-dimensional auditor that grades any skill on a 115-point scale.
+A read-only, multi-dimensional auditor that grades any skill on a 120-point scale.
 
 - **7 dimensions**: process closure & idempotency, tool/command conventions,
   portability & defense, usability, security & op risk, code & doc quality,
@@ -83,6 +83,13 @@ A read-only, multi-dimensional auditor that grades any skill on a 115-point scal
 - **Two depths**: L1 static (~2 min) and L2 dryRun (~5 min, read-only hub +
   reachability checks)
 - **Strict pass gate**: total ≥ 90 **and** zero ERR
+- **Four 0-point ERRs** for *silent* failure modes — cross-skill reference base,
+  relocation-safe path derivation, file-I/O failure handling, SKILL.md length.
+  They deduct nothing but block on hit, so adopting them cannot lower an
+  existing skill's score
+- **Bundled checker** `scripts/check_path_boundary.py` — judges path derivation
+  by *endpoint vs. skill boundary*, not by counting `.parent` hops (stdlib only,
+  read-only)
 - **`--fix`**: backup-first, splits auto-safe fixes from business-logic ones
 
 → Read [`skills/skill-deep-audit/README.md`](skills/skill-deep-audit/README.md) for details.
