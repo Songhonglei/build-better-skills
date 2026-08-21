@@ -22,7 +22,7 @@ Location: the root directory of the audited skill
 
 ## Overall score: {score} / {max}　　{PASS ✅ / FAIL ❌}
 
-> Max: L1 static 112 / L2 dryRun 115.
+> Max: L1 static 117 / L2 dryRun 120.
 > Pass criteria (dual gate, both required): total ≥ pass line (L1/L2 dryRun both **≥90**) **and** zero ERR
 
 ---
@@ -74,12 +74,12 @@ Location: the root directory of the audited skill
 |------|------|------|-------|--------|
 | D1 Process closure & idempotency | {d1} | 13 | {n} | {n} |
 | D2 Tool & command conventions | {d2} | 10 | {n} | {n} |
-| D3 Portability & defense | {d3} | 15 | {n} | {n} |
-| D4 Skill usability | {d4} | 21 | {n} | {n} |
+| D3 Portability & defense | {d3} | 18 | {n} | {n} |
+| D4 Skill usability | {d4} | 23 | {n} | {n} |
 | D5 Security & operation risk | {d5} | 21 | {n} | {n} |
 | D6 Code & doc quality | {d6} | 31 | {n} | {n} |
 | D7 Dependency & footprint health | {d7} | 4 | {n} | {n} |
-| **Total** | **{total}** | **115** | | |
+| **Total** | **{total}** | **120** | | |
 
 ---
 

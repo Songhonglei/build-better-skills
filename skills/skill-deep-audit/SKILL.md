@@ -5,7 +5,7 @@ description: >
   Cursor, etc.). Runs a 7-dimension static analysis (D1 process closure
   & idempotency, D2 tool/command conventions, D3 portability & defense,
   D4 skill usability, D5 security & op risk, D6 code & doc quality, D7
-  dependency & footprint) with explicit ERR / WARN severity, 115-point
+  dependency & footprint) with explicit ERR / WARN severity, 120-point
   scoring (pass line 90 + zero ERR), and an opt-in `--fix` workflow that
   always backs up first. Two depths: L1 static (~2 min) and L2 dryRun
   (~5 min, read-only hub + reachability checks). Strict red lines —
@@ -85,14 +85,14 @@ Please choose check depth:
 
 L1 Static analysis (~2 min)
    File read, structural check, keyword scan, syntax check.
-   Max 112 (skips items that need to touch external systems). Pass line ≥ 90.
+   Max 117 (skips items that need to touch external systems). Pass line ≥ 90.
    Good for: quick first-draft check.
 
 L2 dryRun (~5 min, recommended) ⭐
    L1 + Hub existence check + dependency existence check + branch reachability
    simulation (file existence / env config / read-only verification of
    unhit branches).
-   Max 115. Pass line ≥ 90.
+   Max 120. Pass line ≥ 90.
    Good for: pre-release / pre-ship full acceptance.
 
 Default recommendation: L2 dryRun. Reply 1 / L1 for static, 2 / L2 for dryRun
@@ -293,11 +293,14 @@ Write path: `{skill-path}/AUDIT-{YYYY-MM-DD}.md`
 ```
 📋 Audit complete: {skill-name}
 ─────────────────────────────────────
-Total score: {score}/{max}   {PASS ✅ / FAIL ❌}  (L1 max 112 / L2 dryRun max 115)
+Total score: {score}/{max}   {PASS ✅ / FAIL ❌}  (L1 max 117 / L2 dryRun max 120)
 Pass line:   ≥ 90 (uniform across L1 / L2 dryRun)  AND  zero ERR (dual-judgement)
 Depth:       {L1 static / L2 dryRun}
 
-🔴 ERR: {n}   |   🟡 WARN: {n}
+🔴 ERR: {n} (incl. {z} zero-point)   |   🟡 WARN: {n}
+Path & failure handling: D3-E4 {✅/❌} reference base | D3-E5 {✅/❌} path derivation
+                         D3-E6 {✅/❌} I/O failure   | D4-E6 {✅/❌} SKILL.md length
+                         (all four are 0-point ERRs — a hit forces FAIL)
 Highest-priority fix: {ID and name of the highest-deduction ERR}
 
 Estimated score after fixing all ERR: {estimated}/{max}

@@ -125,12 +125,12 @@ toward the actual max):
 
 | Depth | Actual max | Pass line | Skipped items |
 |-------|-----------|-----------|---------------|
-| L1 static | 112 | **≥ 90** | D7-W1 (1), D3-W2 (2) |
-| L2 dryRun | 115 | **≥ 90** | none |
+| L1 static | 117 | **≥ 90** | D7-W1 (1), D3-W2 (2) |
+| L2 dryRun | 120 | **≥ 90** | none |
 
-> ⚠️ **L1 max is only 112** (skips Hub check D7-W1, branch simulation D3-W2,
+> ⚠️ **L1 max is only 117** (skips Hub check D7-W1, branch simulation D3-W2,
 > etc. that need external systems), but the **pass line is still
-> uniformly 90**. L2 dryRun max is 115 and the pass line is also 90.
+> uniformly 90**. L2 dryRun max is 120 and the pass line is also 90.
 > L2 dryRun does **read-only queries / reachability checks only** (file
 > existence, env reachability, simulated unhit branches, Hub query); it
 > performs **no writes or updates**.

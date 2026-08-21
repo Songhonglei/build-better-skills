@@ -13,7 +13,7 @@ human confirmation".
 
 | Mode | What runs | Max | Time |
 |------|-----------|-----|------|
-| **L1 static** | File read, structural check, keyword scan, syntax check (D1–D7 minus items that need external systems) | **112** | ~2 min |
+| **L1 static** | File read, structural check, keyword scan, syntax check (D1–D7 minus items that need external systems) | **117** | ~2 min |
 | **L2 dryRun** ⭐ | L1 + Hub existence check + dependency existence check + read-only branch reachability simulation | **120** | ~5 min |
 
 Both depths share the same pass line: **≥ 90 points AND zero ERR**.
