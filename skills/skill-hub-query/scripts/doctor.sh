@@ -10,12 +10,16 @@ source "${SELF_DIR}/_lib.sh"
 
 setup_legacy_notice
 
-# Track diagnostic temp files for clean removal on any exit path.
+# Track diagnostic temp files/dirs for clean removal on any exit path.
 _DOCTOR_TMP_FILES=()
+_DOCTOR_TMP_DIRS=()
 _doctor_cleanup() {
-  local f
+  local f d
   for f in "${_DOCTOR_TMP_FILES[@]:-}"; do
     [[ -n "$f" ]] && rm -f "$f" 2>/dev/null
+  done
+  for d in "${_DOCTOR_TMP_DIRS[@]:-}"; do
+    [[ -n "$d" ]] && rm -rf "$d" 2>/dev/null
   done
   rm -f "${_LEGACY_NOTICE_MARKER:-}" 2>/dev/null
 }
@@ -35,7 +39,9 @@ if is_skillhub_cn; then
 
   echo "[1/3] checking dependencies..."
   _SHCN_MISSING=0
-  for cmd in jq curl file unzip; do
+  # python3 (not unzip): install.sh extracts via scripts/_zip_safe.py so that
+  # non-ASCII filenames survive (Info-ZIP unzip mangles them).
+  for cmd in jq curl file python3; do
     if command -v "$cmd" >/dev/null 2>&1; then
       echo "  ok   $cmd"
     else
@@ -96,7 +102,7 @@ LEGACY_OK=0
 
 # 1) Dependencies
 echo "[1/5] checking dependencies..."
-for cmd in jq curl file unzip; do
+for cmd in jq curl file python3; do
   if command -v "$cmd" >/dev/null 2>&1; then
     echo "  ok   $cmd"
   else
@@ -104,6 +110,35 @@ for cmd in jq curl file unzip; do
     add_issue "missing dependency '$cmd'; install with your package manager (e.g. apt install -y $cmd)"
   fi
 done
+
+# ZIP handling self-test: install.sh relies on _zip_safe.py decoding UTF-8
+# filenames correctly. Merely confirming that python3 exists is not enough --
+# what actually needs proving is that a zip holding a non-ASCII filename lists
+# back byte-for-byte. That is the whole point of switching off Info-ZIP `unzip`,
+# which mangles such names and makes the installed skill crash on first run.
+if [[ -f "${SELF_DIR}/_zip_safe.py" ]]; then
+  _zt="$(mktemp -d 2>/dev/null || mktemp -d -t skill-hub-query-ziptest)"
+  _DOCTOR_TMP_DIRS+=("$_zt")
+  _zt_name='references/映射表_v2.json'
+  if python3 -c "
+import zipfile
+with zipfile.ZipFile('${_zt}/t.zip','w') as z:
+    z.writestr('${_zt_name}','{}')
+" 2>/dev/null; then
+    _listed="$(python3 "${SELF_DIR}/_zip_safe.py" list "${_zt}/t.zip" 2>/dev/null || echo "")"
+    if [[ "$_listed" == "$_zt_name" ]]; then
+      echo "  ok   zip UTF-8 filename handling"
+    else
+      echo "  err  zip UTF-8 filename handling (expected ${_zt_name}, got: ${_listed:-<empty>})"
+      add_issue "_zip_safe.py cannot decode UTF-8 filenames; skills containing non-ASCII filenames will break after install. Check that the python3 zipfile module is intact."
+    fi
+  else
+    echo "  skip zip self-test (could not create a test zip)"
+  fi
+else
+  echo "  err  scripts/_zip_safe.py is missing"
+  add_issue "scripts/_zip_safe.py is missing; install.sh cannot extract archives. Reinstall this skill."
+fi
 echo ""
 
 # 2) Paths
