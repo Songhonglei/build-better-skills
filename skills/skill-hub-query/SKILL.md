@@ -17,7 +17,7 @@ description: >-
 
 # skill-hub-query
 
-- **Version**: 1.1.5
+- **Version**: 1.2.0
 - **License**: MIT
 - **Author**: Evan Song (<https://github.com/Songhonglei>)
 - **Repository**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-hub-query>
@@ -31,6 +31,25 @@ description: >-
 > It does NOT target [clawhub.ai](https://clawhub.ai) — that Hub has its own
 > API surface and an official CLI named `clawhub`. Use this tool when you have
 > a private or compatible Hub to drive.
+
+---
+
+## Requirements
+
+| Command | Used for | If missing |
+|---|---|---|
+| `bash` (≥ 4.0) | all scripts | nothing works |
+| `curl` | every HTTP call | nothing works |
+| `jq` | JSON parsing, cache queries | nothing works |
+| `python3` (≥ 3.6, stdlib only) | `scripts/_zip_safe.py` — listing and extracting skill archives | `install.sh` cannot extract |
+| `file` | archive type detection in error paths | degraded diagnostics only |
+| `git` | `edit.sh` owner pre-check via `git config user.email` | set `SKILL_HUB_OWNER_EMAIL` instead |
+
+> `unzip` is **not** required. Extraction goes through Python's `zipfile`
+> because Info-ZIP `unzip` 6.00 ignores the ZIP spec's UTF-8 filename flag and
+> mangles non-ASCII filenames — the installed skill then crashes on first run
+> with a `FileNotFoundError` that points at the wrong culprit. Run
+> `bash scripts/doctor.sh` to verify filename handling on your machine.
 
 ---
 
@@ -400,6 +419,7 @@ skill-hub-query/
 └── scripts/
     ├── _lib.sh                       # path discovery + token + curl wrapper (sourced)
     ├── _edit_lib.sh                  # edit.sh internals (sourced)
+    ├── _zip_safe.py                  # zip list/extract with correct filename decoding
     ├── doctor.sh                     # one-shot self-check
     ├── sync.sh                       # full / incremental cache sync
     ├── query.sh                      # query the local cache
@@ -452,6 +472,10 @@ For direct `curl` calls, pass the auth header when you have a token:
 | `[error] Skill 'X' not found (HTTP 404)` | Wrong slug / removed; try `query.sh slug X` and possibly `sync.sh --full` |
 | `[error] Download failed: X (network error)` | curl-layer failure (network/DNS); check connectivity |
 | `zip contains unsafe paths` | Defense against directory traversal; report to Hub maintainer |
+| `extraction failed (corrupt or truncated zip)` | The download is not a valid archive; existing install untouched. Retry; if it persists, report to the Hub maintainer |
+| `version mismatch: requested vX, but the package's SKILL.md says vY` | The Hub's download endpoint served a different version than requested. The ledger records the actual version. Pin the version explicitly and re-check if you need an exact one |
+| `version-history API unavailable; falling back to cached version` | The version API failed (the printed reason says whether it was auth or network). The cache can lag the Hub, so verify the version, or run `sync.sh` and reinstall |
+| `_zip_safe.py cannot decode UTF-8 filenames` | The python3 `zipfile` module is broken/incomplete; skills with non-ASCII filenames would break after install. Fix python3 before installing |
 | `Extracted content is missing SKILL.md` | Malformed zip; aborted without touching existing install |
 | `install failed; rolling back` | Atomic dir replace failed (rare; usually disk full) |
 | `X exists and --yes not given` | Agent didn't get user authorization; have the user say "yes" first |
@@ -467,9 +491,11 @@ For direct `curl` calls, pass the auth header when you have a token:
 3. Incremental sync does not prune removed skills (see "Cache" section).
 4. The legacy channel is a transition path; for production / long-term use, configure a token.
 5. `edit.sh` requires optional `/edit` and `/detail` endpoints; not all Hubs expose them.
+6. **The cached `latestVersion.version` is not a source of truth.** It is a snapshot written by `sync.sh` and is not invalidated when the Hub publishes afterwards (observed drift: cache `1.3.0` vs. real latest `2.2.2`). `install.sh` therefore queries `/versions/<slug>?limit=1` first and only falls back to the cache — with a loud warning — when that call fails. If you write your own logic, use `items[0].version`, never the cached field.
+7. **A Hub's download endpoint may serve a version other than the one requested** (observed: requested `v2.2.2`, received the `v1.3.0` package). Before replacing anything, `install.sh` compares the version declared in the package's `SKILL.md` and records the actual value with a warning. It warns rather than fails, because some packages legitimately ship an un-bumped `SKILL.md`. When you need an exact version, pass it explicitly and check the output.
 
 ---
 
-## 版本
+## Version
 
-当前 **v1.1.4**。完整版本历史见 [CHANGELOG.md](./CHANGELOG.md)。
+Currently **v1.2.0**. Full history: [CHANGELOG.md](./CHANGELOG.md).
