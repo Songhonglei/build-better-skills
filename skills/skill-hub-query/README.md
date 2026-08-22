@@ -70,7 +70,14 @@ adapter targets `https://api.skillhub.cn`.
   paths — path-traversal (`..`), absolute paths, and illegal characters are
   rejected.
 - Downloaded archives are checked for ZIP magic bytes and unsafe entry paths
-  before extraction.
+  (`..`, absolute paths) before extraction, and every extraction target is
+  re-resolved to confirm it stays inside the staging directory.
+- Extraction runs through `scripts/_zip_safe.py` (Python `zipfile`) rather than
+  `unzip`, so non-ASCII filenames survive intact — see
+  [SKILL.md](SKILL.md#requirements).
+- `install.sh` resolves the version from the Hub's version-history API (never
+  from a possibly stale local cache) and verifies the downloaded package's own
+  declared version before replacing anything on disk.
 - `--yes` is a **user-authorization flag**; an agent must not add it on its own.
 - Never commit tokens to git or echo full tokens.
 
