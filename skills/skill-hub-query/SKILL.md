@@ -17,7 +17,7 @@ description: >-
 
 # skill-hub-query
 
-- **Version**: 1.2.0
+- **Version**: 1.3.0
 - **License**: MIT
 - **Author**: Evan Song (<https://github.com/Songhonglei>)
 - **Repository**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-hub-query>
@@ -258,6 +258,34 @@ parsed with jq (sub-ms).
 > Incremental sync does NOT prune removed/withdrawn skills (it only unions
 > new records). If you hit a "found in cache but install 404s" case, run
 > `bash sync.sh --full`. The full sync log will report "pruned N removed".
+
+### Do not treat cached `latestVersion` as authoritative
+
+`query.sh` list/slug queries read the **local cache**. When that cache is stale the
+`latestVersion` field is stale too — and **a stale value looks exactly like a fresh
+one**. There is no signal telling you to doubt it.
+
+Observed failure: a cache left untouched for 67 days reported an old release as
+"latest", which nearly caused a publish against the wrong version baseline.
+
+- `query.sh` now warns when the cache is **older than 7 days** (notice) or
+  **older than 30 days** (loud). Warnings go to stderr only and never block —
+  offline use stays intentional. When you see one, run `sync.sh` before trusting
+  the numbers.
+- **For anything version-critical** — deciding a release number, comparing
+  versions, checking whether an upgrade exists — re-sync first and only then read
+  the number:
+
+```bash
+bash scripts/sync.sh && bash scripts/query.sh slug <slug>
+```
+
+> Note: the `skillhub_cn` provider queries the hub live and never reads this
+> cache, so the warning does not apply there — it also offers a dedicated
+> `query.sh versions <slug>` listing.
+
+> Rule of thumb: use the cache for **discovery** (search, browse, read summaries);
+> never let a cached number decide a release.
 
 ---
 
