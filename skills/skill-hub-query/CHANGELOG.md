@@ -2,6 +2,49 @@
 
 All notable changes to this skill are documented here.
 
+### v1.3.0 (2026-08-23)
+
+Adds a stale-cache warning to `query.sh`. Same theme as v1.2.0: a failure that
+reports success and only bites later.
+
+- **Added: `query.sh` warns when the local cache is old.** List queries read the
+  local cache by design — that is what makes them fast. The problem is that a
+  stale `latestVersion` is **indistinguishable from a fresh one**: same shape,
+  same field, no staleness marker anywhere in the output. Observed failure: a
+  cache untouched for 67 days reported an old release as "latest", which nearly
+  caused a publish against the wrong version baseline. A single `sync.sh` fixed
+  the data instantly — the data path was never broken, the *silence* was.
+  - Thresholds: **>7 days** prints a notice, **>30 days** prints a loud warning
+    that also points at `query.sh versions <slug>` (live API, never cached).
+  - **Warn only, never block.** Offline operation stays intentional, so a stale
+    cache is still usable — you just get told.
+  - All warning output goes to **stderr**, so `query.sh ... | jq` pipelines are
+    unaffected.
+  - Applies to the cache-backed providers only. `skillhub_cn` returns before the
+    cache is ever consulted (it queries live), so the warning is correctly absent
+    there.
+
+- **Note for anyone extending this: do not mix the two timestamps in
+  `skill-cache-meta.json`.** The first implementation computed cache age from
+  `max(lastFullSync, lastIncrementalSync)`, which is wrong and **silently
+  defeats the whole feature**:
+  - `lastFullSync` is a **local wall-clock** stamp — "a sync actually ran".
+  - `lastIncrementalSync` is the **server-side max `updatedAt`** — the
+    incremental cursor, i.e. "when the newest skill on the hub last changed".
+    It is deliberately *not* wall-clock (see `sync.sh`), because using local
+    time there would drop records on the next incremental sync under clock skew.
+
+  Taking `max()` of the two makes the computed age collapse to ~0 whenever the
+  hub has recent activity — so "local cache 67 days stale + hub updated
+  yesterday" produced **no warning at all**, exactly the case the warning exists
+  for. Age is now derived from `lastFullSync` only, falling back to the cache
+  file's `mtime` when it is absent or `0` (i.e. only incremental syncs have run);
+  `mtime` is also a local clock, so it is semantically safe.
+
+  Worth stating plainly: the first round of tests passed while this bug was live,
+  because every test case set both fields to the same value — the inputs could
+  not express the bug. Verified now with the two fields deliberately diverged.
+
 ### v1.2.0 (2026-08-22)
 
 Install-reliability release. All three issues below were **silent failures** —
