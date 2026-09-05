@@ -61,8 +61,29 @@ DESC="$(awk '/^description:/{f=1;sub(/^description:[ >|]*/,"");if($0!="")print;n
 [[ -z "$DESC" ]] && DESC="$DISPLAY"
 SUMMARY="$(echo "$DESC" | cut -c1-40)"
 
+# changelog：不放进 payload 的话，平台会填默认值 "Initial release"（2026-09-05 实测）。
+# 优先独立 CHANGELOG.md 的首条版本记录（本 skill 的惯例，见 scaffold.sh），
+# 回退 SKILL.md 内嵌变更日志首条（形如 "- **v1.3.4（2026-09-05）**：..."），
+# 两者都没有则留空（平台回退默认文案）。
+CHANGELOG=""
+if [[ -f "$FORK/CHANGELOG.md" ]]; then
+  # 兼容常见写法：## [1.0.0] - date / ### v1.0.17 (2026-08-03) / ## 1.0.3
+  CHANGELOG="$(grep -m1 -oE '^#{2,4}[[:space:]]*v?\[?[0-9]+\.[0-9]+\.[0-9]+\]?.*' "$FORK/CHANGELOG.md" 2>/dev/null | sed -e 's/^#*[[:space:]]*//' || true)"
+fi
+if [[ -z "$CHANGELOG" ]]; then
+  CHANGELOG="$(grep -m1 -oE '^-[[:space:]]*\*\*v[0-9]+\.[0-9]+\.[0-9]+[^]]*\*\*[:：].*' "$FORK/SKILL.md" 2>/dev/null || true)"
+  # 去掉行首列表符与加粗标记；标题行常以「：」结尾而正文在子列表里，故一并去掉结尾孤立冒号
+  CHANGELOG="$(printf '%s' "$CHANGELOG" | sed -e 's/^-[[:space:]]*//' -e 's/\*\*//g' -e 's/[:：][[:space:]]*$//')"
+fi
+CHANGELOG="$(printf '%s' "$CHANGELOG" | cut -c1-300)"
+
 echo "ℹ️  slug=$SLUG  version=$VERSION"
 echo "ℹ️  displayName=$DISPLAY"
+if [[ -n "$CHANGELOG" ]]; then
+  echo "ℹ️  changelog=$CHANGELOG"
+else
+  echo "⚠️  未提取到 changelog（无 CHANGELOG.md 且 SKILL.md 无内嵌版本记录）→ 平台将填默认值"
+fi
 
 # ---- 校验 token + slug 可用性 ----
 echo "🔎 校验 token 与 slug..."
@@ -72,14 +93,18 @@ if [[ "$me_code" == "401" ]]; then echo "❌ token 无效（401）" >&2; exit 7;
 # ---- 组装 payload JSON（python 安全转义，写临时文件避免 curl -F 内联字符串被空格/特殊字符截断）----
 PAYLOAD_FILE="$(mktemp "${TMPDIR:-/tmp}/skh_payload.XXXXXX.json")"
 trap 'rm -f "$PAYLOAD_FILE"' EXIT
-python3 - "$SLUG" "$NAME" "$DISPLAY" "$SUMMARY" "$DESC" "$VERSION" > "$PAYLOAD_FILE" <<'PY'
+python3 - "$SLUG" "$NAME" "$DISPLAY" "$SUMMARY" "$DESC" "$VERSION" "$CHANGELOG" > "$PAYLOAD_FILE" <<'PY'
 import json,sys
-slug,name,display,summary,desc,version=sys.argv[1:7]
-print(json.dumps({
+slug,name,display,summary,desc,version,changelog=sys.argv[1:8]
+payload={
   "slug":slug,"name":name,"displayName":display,
   "summary":summary,"description":desc,"version":version,
   "claimSlug":True,"joinContest":False
-},ensure_ascii=False))
+}
+# 仅在提取到时带 changelog，避免用空串覆盖平台默认文案
+if changelog:
+    payload["changelog"]=changelog
+print(json.dumps(payload,ensure_ascii=False))
 PY
 
 # ---- 收集要发的文件（白名单：只发源码；剔除无后缀文件/dotfile/archive/签名/依赖）----

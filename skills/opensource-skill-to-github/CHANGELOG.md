@@ -3,6 +3,13 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.18 (2026-09-05)
+- **修复 skillhub.cn 发版丢失 changelog**：`scripts/skillhub_cn_publish.sh` 的 payload 原先只构造 `slug/name/displayName/summary/description/version/claimSlug/joinContest`，**缺 `changelog` 字段**，导致平台上每个版本都显示默认文案 `Initial release`。
+  - **定位**：对比同一 skill 在平台上的两个版本——1.3.3 由另一调用方带 changelog 发布即显示正常，走本脚本发布的 1.3.4 变成 `Initial release`，确认为脚本局限而非发版失败。
+  - **改为自动提取**：独立 `CHANGELOG.md` 首条版本标题优先（正则兼容 `## [1.0.0] - date` / `### v1.0.17 (2026-08-03)` / `## 1.0.3` 三种常见写法）→ 回退 SKILL.md 内嵌变更日志首条（自动剥离列表符、加粗标记、结尾孤立冒号）→ 都没有则留空。
+  - **不用空串覆盖平台默认**：仅当提取到内容时才带 `changelog` 字段；截取 300 字符。
+  - 同时在脚本输出里回显提取结果，提取不到时打 warning，便于发版前自检。
+
 ### v1.0.17 (2026-08-03)
 - **新增 mono-repo 安全护栏**：
   - **背景**：2026-08-02 `better-office-work-flow` 仓库被本流程冲掉——把单个 skill 当 repo 根目录推到 main，force-overwrite 了 `skills/` 下的 4 个 skill（事后从孤立提交 `63ae4858` 恢复）。
