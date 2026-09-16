@@ -52,7 +52,7 @@ if is_skillhub_cn; then
   echo ""
 
   echo "[2/3] connectivity probe (GET ${SKILLHUB_CN_BASE}/api/v1/skills/skill-creator)"
-  _shcn_body="$(mktemp)"; _DOCTOR_TMP_FILES+=("$_shcn_body")
+  _shcn_body="$(shq_mktemp)"; _DOCTOR_TMP_FILES+=("$_shcn_body")
   _shcn_http="$(curl -sSL --max-time 10 -o "$_shcn_body" -w "%{http_code}" \
     "${SKILLHUB_CN_BASE}/api/v1/skills/skill-creator" 2>/dev/null || echo "000")"
   case "$_shcn_http" in
@@ -117,10 +117,15 @@ done
 # back byte-for-byte. That is the whole point of switching off Info-ZIP `unzip`,
 # which mangles such names and makes the installed skill crash on first run.
 if [[ -f "${SELF_DIR}/_zip_safe.py" ]]; then
-  _zt="$(mktemp -d 2>/dev/null || mktemp -d -t skill-hub-query-ziptest)"
+  _zt="$(shq_mktemp -d shq-ziptest)"
   _DOCTOR_TMP_DIRS+=("$_zt")
   _zt_name='references/映射表_v2.json'
-  if python3 -c "
+  # The inline python3 -c below embeds a non-ASCII filename. Under a C locale
+  # (no LANG on macOS launchd/cron/bare-ssh) the interpreter decodes argv as
+  # ascii and rejects the source with "Unable to decode the command" before
+  # anything runs. PYTHONUTF8=1 keeps the construction stage encoding-aligned
+  # with _zip_safe.py (which self-heals internally).
+  if PYTHONUTF8=1 python3 -c "
 import zipfile
 with zipfile.ZipFile('${_zt}/t.zip','w') as z:
     z.writestr('${_zt_name}','{}')
@@ -190,7 +195,7 @@ else
 # 4a) OpenAPI (requires token)
 if [[ -n "$TOKEN_SOURCE" ]]; then
   echo "  probe OpenAPI: GET ${HUB_API_PREFIX}/search?size=1 (with token)"
-  search_body="$(mktemp)"; _DOCTOR_TMP_FILES+=("$search_body")
+  search_body="$(shq_mktemp)"; _DOCTOR_TMP_FILES+=("$search_body")
   auth_hdr="$(load_auth_header)"
   auth_scheme="$(load_auth_scheme)"
   search_http="$(curl -sSL --max-time 10 -o "$search_body" -w "%{http_code}" \
@@ -229,7 +234,7 @@ fi
 
 # 4b) Legacy fallback
 echo "  probe Legacy: GET ${HUB_LEGACY_API_PREFIX}/search?size=1 (no auth)"
-legacy_body="$(mktemp)"; _DOCTOR_TMP_FILES+=("$legacy_body")
+legacy_body="$(shq_mktemp)"; _DOCTOR_TMP_FILES+=("$legacy_body")
 legacy_http="$(curl -sSL --max-time 10 -o "$legacy_body" -w "%{http_code}" \
   "${ENDPOINT}${HUB_LEGACY_API_PREFIX}/search?size=1" 2>/dev/null || echo "000")"
 case "$legacy_http" in
@@ -263,7 +268,7 @@ if [[ "${SKILL_HUB_DISABLE_EDIT:-0}" == "1" ]]; then
 else
   edit_prefix="${SKILL_HUB_EDIT_PREFIX:-${HUB_LEGACY_API_PREFIX}}"
   echo "  probe /edit endpoint: PUT ${edit_prefix}/edit/__probe__ (empty body, expect 404)"
-  edit_body="$(mktemp)"; _DOCTOR_TMP_FILES+=("$edit_body")
+  edit_body="$(shq_mktemp)"; _DOCTOR_TMP_FILES+=("$edit_body")
   edit_http="$(curl -sSL --max-time 10 -o "$edit_body" -w "%{http_code}" \
     -X PUT \
     -H "Content-Type: application/json" \

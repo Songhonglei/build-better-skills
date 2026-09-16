@@ -1,5 +1,7 @@
 ---
 name: skill-hub-query
+bins: [bash, curl, jq, python3, git]
+metadata: {"openclaw": {"requires": {"env": ["PYTHONUTF8", "_SHQ_ZIP_UTF8_REEXEC"]}}}
 description: >-
   Query, install, update, and edit AI agent skills on any compatible Skill Hub
   (self-hosted, or any Hub implementing the documented API contract).
@@ -9,15 +11,20 @@ description: >-
   keyword / author / time / source, inspect version history, install or upgrade
   a specific version, and edit a skill's card metadata (display name, summary,
   tags, visibility, applicable position, etc.) via a safety-first GET -> diff ->
-  backup -> PUT -> dual-channel verify -> auto-rollback flow. Trigger phrases
+  backup -> PUT -> dual-channel verify -> auto-rollback flow, plus team member
+  management (search teams / list members / add / remove with pre-write
+  de-duplication and post-write verification). Trigger phrases
   include "what's new on the hub", "search for X skill", "install X",
   "update Y skill", "edit hub card info", "show skill version history",
-  "skill-hub-query".
+  "add a team member", "remove from team", "list team members",
+  "skill-hub-query". Use when the user asks what is on a hub, wants a skill
+  installed or upgraded to an exact version, needs card metadata edited
+  safely, or manages skill-hub team membership.
 ---
 
 # skill-hub-query
 
-- **Version**: 1.3.0
+- **Version**: 1.4.0
 - **License**: MIT
 - **Author**: Evan Song (<https://github.com/Songhonglei>)
 - **Repository**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-hub-query>
@@ -116,9 +123,28 @@ Then verify with `bash scripts/doctor.sh`.
 5. Show: "installed; will be loaded on the next agent session"
 
 ### "Install a batch"
+
 1. Query each slug for version + permission info
 2. Show one combined manifest + estimated download size, wait for approval
 3. After approval, install **serially** with `install.sh <slug> --yes` (avoid rate limiting); report failures separately
+
+### "Manage team members"
+
+Runs `team.sh` (team member management: search / my teams / detail / member
+list / add / remove). Optional Hub capability — contract in
+[`references/api.md`](references/api.md) §5; if your Hub does not implement
+it, set `SKILL_HUB_DISABLE_TEAM=1`.
+
+Field-tested pitfalls the script already defends against (do not bypass):
+
+- `add` returns success even for non-existent emails and writes a dangling
+  record — the script re-verifies every add against the member list.
+- `add` is idempotent for existing members — the script de-duplicates first
+  and reports the existing role (never silently changes it).
+- The pagination parameter is `current=` (`page=` is silently ignored).
+- Valid roles: `member` / `admin` / `viewer`.
+- Write operations show the target team + full roster and wait for
+  confirmation; `--yes` must be user-authorized (an agent must never pass it).
 
 ---
 
@@ -146,6 +172,8 @@ Then verify with `bash scripts/doctor.sh`.
 | `SKILL_HUB_BACKUP_RETENTION` | `20` | How many recent edit.sh backups to keep per slug (older are pruned) |
 | `SKILL_HUB_DOWNLOAD_TIMEOUT` | `120` | curl `--max-time` (seconds) for skill ZIP download in install.sh |
 | `SKILL_HUB_OWNER_EMAIL` | (auto: `git config user.email`) | Email used by edit.sh owner pre-check; override if your git identity differs from your Hub identity |
+| `SKILL_HUB_TEAM_PREFIX` | `/api/team` | Path prefix for team endpoints (team.sh only) |
+| `SKILL_HUB_DISABLE_TEAM` | `0` | Set to `1` to disable `team.sh` when your Hub does not implement the team endpoints |
 
 ### Skills install directory
 
@@ -207,6 +235,7 @@ is needed (all supported operations are public, read-only).
 | `sync.sh` | — | ⚪ no-op (live search needs no cache; informational, exit 0) |
 | `query.sh author <handle>` | — | ❌ no author-filter param on skillhub.cn (use `keyword`) |
 | `edit.sh` (edit card metadata) | — | ❌ not available — see below |
+| `team.sh` (team management) | — | ❌ not available (no team endpoints on skillhub.cn) |
 
 ### Why edit is not supported on skillhub.cn
 

@@ -76,7 +76,7 @@ elif [[ -z "$VERSION" ]]; then
   # to /dev/null leaves the user seeing only "falling back to cache" with no way
   # to tell an expired token from a dead network. Capture to a temp file and
   # surface it only when we actually fall back or fail.
-  _api_err="$(mktemp 2>/dev/null || mktemp -t skill-hub-query-apierr)"
+  _api_err="$(shq_mktemp shq-apierr)"
   # Register in the EXIT trap so an early `set -e` exit cannot leak the file.
   # NOTE: `trap ... EXIT` REPLACES any previously registered handler, so this must
   # also re-do the cleanup that setup_legacy_notice installed -- otherwise an
@@ -161,7 +161,7 @@ staging=""
 tmp_zip=""
 trap 'rm -rf "${staging:-}" 2>/dev/null; rm -f "${tmp_zip:-}" 2>/dev/null; rm -f "${_api_err:-}" 2>/dev/null; rm -f "${_LEGACY_NOTICE_MARKER:-}" 2>/dev/null' EXIT
 
-tmp_zip="$(mktemp 2>/dev/null || mktemp -t skill-hub-query-zip)"
+tmp_zip="$(shq_mktemp shq-zip)"
 mv "$tmp_zip" "${tmp_zip}.zip"
 tmp_zip="${tmp_zip}.zip"
 echo "[install] downloading..."
@@ -192,7 +192,7 @@ echo "[install] zip size: $zip_size bytes"
 echo "[install] verifying zip paths and extracting..."
 # Assignment is picked up by the trap registered above (single quotes -> expanded
 # at trap time, not at registration time).
-staging="$(mktemp -d 2>/dev/null || mktemp -d -t skill-hub-query-stage)"
+staging="$(shq_mktemp -d shq-install-staging)"
 
 # Staging + whole-directory replace instead of in-place overwrite: an in-place
 # overwrite only refreshes same-named files, leaving files deleted by the new

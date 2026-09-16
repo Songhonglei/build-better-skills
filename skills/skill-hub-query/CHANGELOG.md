@@ -2,6 +2,51 @@
 
 All notable changes to this skill are documented here.
 
+### v1.4.0 (2026-09-16)
+
+Three portability fixes + team management, ported from the internal fork
+(v2.3.0 – v2.3.2). All were field-tested failures, not theoretical ones.
+
+- **Added: `team.sh` — team member management.** search / my / info / list
+  (full pagination) / member / add / remove. Optional Hub capability; the
+  contract (including the fake-200 envelope and the `current=` pagination
+  quirk) is documented in `references/api.md` §5, with a
+  `SKILL_HUB_DISABLE_TEAM=1` kill switch for Hubs without it. Field-tested
+  pitfalls are baked in as guardrails:
+  - `add` returns 200 success for **non-existent emails too**, writing a
+    dangling record (`handle == email`, no avatar) — every add is re-verified
+    against the member list, and dangling records are flagged with a cleanup
+    hint.
+  - `add` is idempotent-success for existing members — inputs are
+    de-duplicated first and the existing role reported, never silently changed.
+  - `remove` silently 200s unknown emails — re-verified after the call.
+  - Writes show the target team + roster and wait for confirmation; `--yes`
+    must be user-authorized.
+- **Fixed: BSD/GNU `mktemp` incompatibility (P0 on macOS).** The old
+  `mktemp ... || mktemp -t name` fallback chains break on both families:
+  GNU rejects `-t` without X's ("too few X's in template"), and `--suffix`
+  (never used here, but the reason the internal fork had this bug) is
+  GNU-only. All temp file/dir creation now goes through one `shq_mktemp`
+  helper in `_lib.sh` that uses the only universally supported form: an
+  explicit template ending in `XXXXXX`, with a prefix whitelist guarding
+  against `/` or leading `-` injection. Direct `mktemp` calls are banned
+  from all scripts.
+- **Fixed: C-locale crashes in `_zip_safe.py` (doctor self-check false
+  alarm on macOS).** Environments without `LANG` (launchd, cron, bare ssh)
+  get **ascii** for both stdio *and* `sys.getfilesystemencoding()` on Python
+  3.7–3.10, because macOS offers no `C.UTF-8` for PEP 538 coercion to find.
+  Two distinct crash points: printing non-ASCII entry names, and
+  `Path.resolve()` on paths containing them (the filesystem encoding is
+  independent of stdio — reconfiguring streams alone is *not* enough; that
+  was the first, insufficient attempt). Fix: when the filesystem encoding is
+  not UTF-8, set `PYTHONUTF8=1` and `exec` ourselves with the same argv,
+  letting interpreter-level UTF-8 mode take over every encoding uniformly;
+  `doctor.sh`'s test-ZIP construction also gets a `PYTHONUTF8=1` prefix.
+- **Fixed: mid-extract write failures left half-installed directories.**
+  `_zip_safe.py` now tracks written files and cleans them up on
+  `OSError` (disk full, permission) before returning 1, so a partial
+  extraction is never mistaken for a complete version.
+
 ### v1.3.0 (2026-08-23)
 
 Adds a stale-cache warning to `query.sh`. Same theme as v1.2.0: a failure that

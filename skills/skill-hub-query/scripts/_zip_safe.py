@@ -24,11 +24,55 @@ Usage:
 
 Exit codes: 0 success / 1 usage or IO error / 6 unsafe path detected
 """
+import os
 import sys
 import zipfile
 from pathlib import Path
 
 _UTF8_FLAG = 0x800
+
+
+def _force_utf8_stdio() -> None:
+    """Force UTF-8 for stdio AND the filesystem encoding under C locale.
+
+    On macOS environments without LANG (launchd, cron, bare ssh -- very common),
+    macOS offers no C.UTF-8 locale, so PEP 538 coercion has nothing to coerce
+    to and Python 3.7-3.10 falls back to ascii for BOTH stdout/stderr and
+    sys.getfilesystemencoding():
+      - printing a non-ASCII entry name (list output, error messages) raises
+        UnicodeEncodeError;
+      - Path.resolve()/realpath on a path containing non-ASCII names raises it
+        too -- the filesystem encoding is independent of stdio, so reconfiguring
+        streams alone is not enough (that was the first, insufficient fix).
+
+    Fix: if the filesystem encoding is not UTF-8, set PYTHONUTF8=1 and exec
+    ourselves with the same argv, letting interpreter-level UTF-8 mode take
+    over every encoding uniformly. After re-exec the check passes and we
+    continue. If exec is impossible, fall back to reconfiguring stdio only.
+    """
+    fs_enc = (sys.getfilesystemencoding() or "").lower()
+    if "utf" in fs_enc:
+        return  # filesystem already UTF-8; stdio shares the same mechanism
+    if os.environ.get("_SHQ_ZIP_UTF8_REEXEC") != "1":
+        env = dict(os.environ)
+        env["PYTHONUTF8"] = "1"
+        env["_SHQ_ZIP_UTF8_REEXEC"] = "1"
+        try:
+            os.execve(sys.executable, [sys.executable] + sys.argv, env)
+        except OSError:
+            pass  # exec unavailable (non-POSIX); fall through to reconfigure
+    # Already re-exec'd, or exec failed: best-effort stdio reconfigure.
+    for name in ("stdout", "stderr"):
+        stream = getattr(sys, name, None)
+        if stream is None:
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError, OSError):
+            pass
+
+
+_force_utf8_stdio()
 
 
 def _decoded_name(info):
@@ -125,18 +169,33 @@ def cmd_extract(zip_path, dest):
         # Write entries out one by one using the CORRECTED name. `extractall`
         # cannot be used here: it would fall back to zipfile's own (possibly
         # CP437-mangled) `info.filename`, undoing the fix in _decoded_name.
+        # A mid-extract failure (disk full, permission) cleans up the partially
+        # written files so a half-installed directory is never mistaken for a
+        # complete version.
+        written: list[Path] = []
         for info, name in zip(infos, names):
             target = dest / name
             if info.is_dir() or name.endswith('/'):
                 target.mkdir(parents=True, exist_ok=True)
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
-            with zf.open(info) as src, open(target, 'wb') as out:
-                while True:
-                    chunk = src.read(65536)
-                    if not chunk:
-                        break
-                    out.write(chunk)
+            try:
+                with zf.open(info) as src, open(target, 'wb') as out:
+                    written.append(target)
+                    while True:
+                        chunk = src.read(65536)
+                        if not chunk:
+                            break
+                        out.write(chunk)
+            except OSError as e:
+                print(f"[error] write failed, aborted and cleaned up: {name}: {e}",
+                      file=sys.stderr)
+                for p in written:
+                    try:
+                        p.unlink()
+                    except OSError:
+                        pass
+                return 1
             # Preserve the executable bit when the archive recorded UNIX modes
             # (scripts/*.sh in a skill package must stay runnable).
             mode = info.external_attr >> 16
