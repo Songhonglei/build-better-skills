@@ -1,5 +1,8 @@
 ---
 name: skill-release-audit
+version: 1.1.0
+python_optional: [yaml]
+metadata: {"openclaw": {"requires": {"env": ["SKILL_AUDIT_LANG"]}}}
 description: >
   Pre-publish quality and safety auditor for AI agent skills (SKILL.md +
   scripts/ + references/ format used by Claude Code, Cursor, OpenAI Codex,
@@ -19,7 +22,7 @@ description: >
 
 # skill-release-audit
 
-- **Version**: 1.0.4
+- **Version**: 1.1.0
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills
@@ -87,6 +90,7 @@ python scripts/healthcheck.py <path/to/skill-dir> --auto-install --install-timeo
 
 # Validate against a specific publishing target (tunes checks, does NOT publish)
 python scripts/healthcheck.py <path/to/skill-dir> --target clawhub
+python scripts/healthcheck.py <path/to/skill-dir> --format json
 
 # Report output language: zh or en (default: auto-detected from $LC_ALL / $LANG)
 python scripts/healthcheck.py <path/to/skill-dir> --lang en
@@ -114,7 +118,14 @@ and at what severity — it **does not publish**.
 | `skillhub` | Private SkillHub (vendor-compatibility layers) | Same as clawhub but version required (WARN) |
 
 Profiles live in [`profiles/`](profiles/) as JSON; add your own by dropping a new
-`<name>.json` there. See [`references/hub-specs.md`](references/hub-specs.md)
+`<name>.json` there.
+
+Env-var check severity is configured **per finding code** via each profile's
+`env_severity` key (v1.1 governance): `ENV_REQUIRED_UNDECLARED` /
+`ENV_OPTIONAL_OVERRIDE` / `ENV_RUNTIME_INJECTED` / `ENV_AMBIENT` /
+`ENV_TEST_ONLY` / `ENV_REVIEW_REQUIRED` — each maps to `WARN` / `INFO` / `OFF`.
+Platform env contracts (runtime-injected / ambient lists) live in
+[`config/env_contracts.json`](config/env_contracts.json). See [`references/hub-specs.md`](references/hub-specs.md)
 for per-registry specifications encoded by these profiles.
 
 ## Report language
@@ -136,11 +147,11 @@ Exit codes: `0` = no errors (may have warnings), `1` = errors found,
 
 | Module | Checks | Script |
 |--------|--------|--------|
-| 1. Syntax & logic | Python AST parse, Bash `-n` syntax check, internal reference paths, leftover TODO/FIXME | `scripts/check_logic.py` |
+| 1. Syntax & logic | Python AST parse, Bash `-n` syntax check, internal reference paths | `scripts/check_logic.py` |
 | 2. Feature coverage | scripts / references mentioned in SKILL.md, stub-file detection | `scripts/check_features.py` |
 | 3. Edge cases | try/except coverage, HTTP timeout, response-status handling, Bash `set -e` | `scripts/check_edges.py` |
 | 4. Data safety | Files written *inside* the skill dir (lost on update) | `scripts/check_data_safety.py` |
-| 5. Dependencies | Python / Node / Bash deps, optional `--auto-install`, **declaration-vs-code env check** | `scripts/check_deps.py` |
+| 5. Dependencies | Python / Node / Bash deps, optional `--auto-install`, **env-var classification check** (false-positive governance v1.1: classifies required / optional-override / runtime-injected / ambient / test-only / review before demanding metadata — no more "reads == must declare") | `scripts/check_deps.py` + `scripts/_env_check.py` |
 | 6. Documentation | description quality, frontmatter discipline, slug rules, target-specific required files (README / LICENSE) | `scripts/check_docs.py` |
 
 ## Data safety hint
