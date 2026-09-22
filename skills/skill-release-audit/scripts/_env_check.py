@@ -38,6 +38,7 @@ F_TEST_ONLY = "ENV_TEST_ONLY"
 F_REVIEW_REQUIRED = "ENV_REVIEW_REQUIRED"
 F_DECLARED_UNUSED = "ENV_DECLARED_UNUSED"
 F_DECLARED_NON_USER = "ENV_DECLARED_NON_USER"
+F_DECLARED_INDIRECT = "ENV_DECLARED_INDIRECT"
 
 # Default severity per code; profiles override via "env_severity" dict.
 DEFAULT_SEVERITY = {
@@ -49,6 +50,7 @@ DEFAULT_SEVERITY = {
     F_REVIEW_REQUIRED: "INFO",
     F_DECLARED_UNUSED: "WARN",
     F_DECLARED_NON_USER: "WARN",
+    F_DECLARED_INDIRECT: None,  # hidden: JS alias/parse flow use, JSON evidence only
 }
 
 # Legacy fallback ambient list (subset of contract file content) — used only
@@ -73,6 +75,144 @@ _TEST_PATH_RE = re.compile(
     r"(^|/)(tests?|test|fixtures?|__tests__|spec|e2e|mocks?|conftest)(/|\.|$)",
     re.IGNORECASE,
 )
+
+
+# ---------------------------------------------------------------------------
+# JS data-flow tracking for the environment object (v1.2)
+#
+# The direct-read regexes below only see `process.env.X` / `process.env["X"]`.
+# Bundled/minified collectors typically alias first:
+#
+#   const environment = process.env                      // alias binding
+#   const cfg = schema.parse(environment)               // Zod parse
+#   const cfg = schema.safeParse({...environment})      // spread + safeParse
+#   function loadConfig(env) { ... env.X ... }           // param binding
+#   return { profile: env.MULTICA_PROFILE }              // return-value flow
+#   const config = loadConfig(process.env)
+#
+# We track env-object identity through a bounded fixpoint (aliases, params,
+# parse results, return values) and mark member accesses on those objects as
+# INDIRECT uses. Indirect uses ONLY feed the reverse declared-unused check —
+# they never satisfy/soften the forward classification (required/optional),
+# because fallback evidence on an aliased access is not statically decidable.
+# ---------------------------------------------------------------------------
+
+_ENV_IDENT = r'[A-Za-z_$][\w$]*'
+_JS_ALIAS_DEF = re.compile(
+    rf'(?:const|let|var|;|,|^|\()\s*({_ENV_IDENT})\s*=\s*process\.env\s*(?=[;,)\n]|$)'
+)
+_JS_PARSE_CALL = re.compile(
+    rf'(?:{_ENV_IDENT}(?:\.{_ENV_IDENT})*)\s*\.\s*(?:parse|safeParse)\s*\(\s*({_ENV_IDENT})'
+)
+_JS_SPREAD_INTO_PARSE = re.compile(
+    rf'(?:{_ENV_IDENT}(?:\.{_ENV_IDENT})*)\s*\.\s*(?:parse|safeParse)\s*\(\s*\{{\s*\.\.\.\s*({_ENV_IDENT})'
+)
+_JS_FUNC_DEF = re.compile(
+    rf'(?:function\s+({_ENV_IDENT})\s*|({_ENV_IDENT})\s*=\s*(?:async\s*)?)\(\s*([^(){{}}]*?)\s*\)\s*(?:=>|\{{)'
+)
+
+
+def _js_env_aliases(source: str) -> tuple:
+    """Collect (env_aliases, parse_result_names) via bounded fixpoint.
+
+    env_aliases:       identifiers bound to the environment object itself —
+                       `const env = process.env`, function params whose call
+                       site passes a tracked env object (`fn(process.env)`,
+                       `loadConfig(env)`).
+    parse_result_names: identifiers bound to schema.parse/safeParse results
+                       of a tracked alias, or to config-loader call results
+                       (`const config = loadConfig(process.env)`) — member
+                       access on them is an INDIRECT env use.
+    """
+    aliases: set = set()
+    parse_results: set = set()
+
+    # seed: direct aliases of process.env (not member access)
+    for m in _JS_ALIAS_DEF.finditer(source):
+        aliases.add(m.group(1))
+
+    for _ in range(4):                                # bounded fixpoint
+        before = (len(aliases), len(parse_results))
+
+        # (a) function params whose call site passes a tracked env object
+        for fm in _JS_FUNC_DEF.finditer(source):
+            fname = fm.group(1) or fm.group(2)
+            params = [p.strip() for p in fm.group(3).split(",") if p.strip()]
+            if not fname or not params:
+                continue
+            for call in re.finditer(
+                    rf'\b{re.escape(fname)}\s*\(\s*([^()]*)\s*\)', source):
+                args = [a.strip() for a in call.group(1).split(",") if a.strip()]
+                for i, a in enumerate(args):
+                    a_base = a.strip("() ")
+                    if (a_base in aliases or a_base == "process.env"
+                            or a_base in parse_results) and i < len(params):
+                        aliases.add(params[i])
+
+        # (b) parse results: const cfg = schema.parse(<alias>) and
+        #     const cfg = schema.safeParse({...alias})
+        for pat, group in ((_JS_PARSE_CALL, 1), (_JS_SPREAD_INTO_PARSE, 1)):
+            for pm in pat.finditer(source):
+                if pm.group(1) not in aliases:
+                    continue
+                m2 = re.search(
+                    rf'(?:const|let|var|;|,|^)\s*({_ENV_IDENT})\s*=\s*'
+                    + re.escape(pm.group(0)), source, re.MULTILINE)
+                if m2:
+                    parse_results.add(m2.group(1))
+
+        # (b2) safeParse result member re-binding: const cfg = parsed.data
+        #      — .data on a tracked parse result carries the parsed env
+        for dm in re.finditer(
+                rf'(?:const|let|var|;|,|^)\s*({_ENV_IDENT})\s*=\s*({_ENV_IDENT})\.data\b',
+                source):
+            if dm.group(2) in parse_results:
+                parse_results.add(dm.group(1))
+
+        # (c) config-loader call-site binding: const config = loadConfig(env)
+        #     — result carries env data when the fn body reads the env object
+        for cm in re.finditer(
+                rf'(?:const|let|var|;|,|^)\s*({_ENV_IDENT})\s*=\s*'
+                rf'({_ENV_IDENT})\s*\(\s*([^(),]*)\s*\)', source, re.MULTILINE):
+            ret_name, fname, arg = cm.group(1), cm.group(2), cm.group(3).strip()
+            arg_base = arg.strip("() ")
+            if arg_base not in aliases and arg_base != "process.env" \
+                    and arg_base not in parse_results:
+                continue
+            if _js_fn_reads_envobj(source, fname, aliases):
+                parse_results.add(ret_name)
+
+        if (len(aliases), len(parse_results)) == before:
+            break
+
+    return aliases, parse_results
+
+
+def _js_fn_reads_envobj(source: str, fname: str, aliases: set) -> bool:
+    """True when function `fname`'s body reads the env object (alias member
+    access or process.env access). Best-effort: slice from the function
+    definition to the next top-level function boundary; on any doubt keep
+    the old WARN behavior (return False — under-approximate only preserves
+    the previous finding, never hides a real read)."""
+    fdef = re.search(rf'\bfunction\s+{re.escape(fname)}\s*\(', source)
+    if fdef:
+        body = source[fdef.start():]
+    else:
+        fdef = re.search(rf'(?:const|let|var)\s+{re.escape(fname)}\s*=\s*(?:async\s*)?\(',
+                         source)
+        if not fdef:
+            return False
+        body = source[fdef.start():]
+    nxt = re.search(rf'\n(?:function\s+{_ENV_IDENT}\s|const\s+{_ENV_IDENT}\s*=)',
+                    body[10:])
+    if nxt:
+        body = body[:nxt.start() + 10]
+    if re.search(r'\bprocess\.env\b', body):
+        return True
+    for a in aliases:
+        if re.search(rf'\b{re.escape(a)}\s*(?:\.|\[)', body):
+            return True
+    return False
 
 
 def _load_env_contracts() -> dict:
@@ -360,6 +500,13 @@ def _js_env_records(source: str, rel: str) -> list:
     code = _blank_js_sh_noncode(source)
     seen: set = set()
 
+    # v1.2: env-object data flow — aliases (const environment = process.env),
+    # function params bound at call sites (fn(process.env)), Zod
+    # parse/safeParse results, and config-loader return values. Member access
+    # on those objects is an INDIRECT use (reverse-check evidence only).
+    aliases, parse_results = _js_env_aliases(code)
+    indirect: set = set()   # line numbers of alias-member accesses
+
     def _ln(m):
         return code.count("\n", 0, m.start()) + 1
 
@@ -384,6 +531,24 @@ def _js_env_records(source: str, rel: str) -> list:
             "access": "process.env subscript read", "lang": "js",
             "has_default": False, "or_fallback": False, "guard_after": False,
         })
+
+    # alias member access → INDIRECT use records (reverse-check only)
+    for name in sorted(aliases | parse_results):
+        for m in re.finditer(
+                rf'\b{re.escape(name)}\s*(?:\.([A-Za-z_$][\w$]*)|\[\s*[\'"]([A-Za-z_$][\w$]*)[\'"]\s*\])',
+                code):
+            var = m.group(1) or m.group(2)
+            if not var:
+                continue
+            line = _ln(m)
+            indirect.add(line)
+            records.append({
+                "variable": var, "file": rel, "line": line,
+                "access": ("alias member access" if name in aliases else
+                            "schema parse result access"),
+                "lang": "js", "has_default": False, "or_fallback": False,
+                "guard_after": False, "indirect": True,
+            })
     return records
 
 
@@ -479,6 +644,10 @@ def _classify(records: list, declared: set, contracts: dict) -> tuple:
         by_var.setdefault(r["variable"], []).append(r)
 
     for var, recs in sorted(by_var.items()):
+        # 0. indirect-only variables never take part in the forward
+        #    classification — they are only evidence for the reverse check.
+        if all(r.get("indirect") for r in recs):
+            continue
         # 1. test-only already filtered at extraction; path re-check for safety
         # 2. runtime-injected per contract (exact names, no prefix exemption)
         if var in runtime:
@@ -541,6 +710,13 @@ def _classify(records: list, declared: set, contracts: dict) -> tuple:
             "suggestedAction": "confirm-then-remove",
         })
     for var in sorted(set(by_var) & declared):
+        # v1.2: alias/parse-flow member access (Zod-parsed config objects,
+        # fn(process.env) params, loader return values) counts as a real use
+        # for the reverse check — reported as ENV_DECLARED_INDIRECT evidence,
+        # not a WARN. Direct reads still classify normally below.
+        if any(r.get("indirect") for r in by_var[var]):
+            evidence.append(_ev_indirect(var, by_var[var]))
+            continue
         if var in runtime or var in ambient:
             findings.append({
                 "code": F_DECLARED_NON_USER,
@@ -565,6 +741,22 @@ def _ev(var, recs, code, reason):
     }
 
 
+def _ev_indirect(var, recs):
+    """ENV_DECLARED_INDIRECT evidence entry — declared var used through a
+    JS alias / Zod parse / config-loader data flow (v1.2). Console stays
+    silent by default; JSON keeps the hit path as machine-readable proof."""
+    locs = [{"file": r["file"], "line": r["line"], "access": r["access"]}
+            for r in recs]
+    return {
+        "code": F_DECLARED_INDIRECT, "variable": var,
+        "locations": locs,
+        "classification": "declared_indirect",
+        "reason": "used via env-object alias / schema parse / loader return "
+                  "(data-flow tracked)",
+        "suggestedAction": "none",
+    }
+
+
 def _fd(var, recs, code, reason):
     return {
         "code": code, "severity": DEFAULT_SEVERITY[code],
@@ -585,6 +777,7 @@ def code_to_classification(code: str) -> str:
         F_REVIEW_REQUIRED: "review_required",
         F_DECLARED_UNUSED: "declared_unused",
         F_DECLARED_NON_USER: "declared_non_user",
+        F_DECLARED_INDIRECT: "declared_indirect",
     }.get(code, "unknown")
 
 
