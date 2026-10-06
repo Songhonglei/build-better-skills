@@ -379,6 +379,43 @@ skills' current status (a condensed version of the root table).
 Avoid the "table lists 5 but only 1 published" dead-end where installing a missing
 member fails.
 
+### 14.4 Incremental release into a mono-repo (never push the fork's main)
+
+When the target repo is a **mono-repo** (root has `skills/`, several skills share one repo —
+`build-better-skills` is itself one), do **not** run the normal push flow: it treats the fork as
+the repo root and force-overwrites every sibling under `skills/`
+(`better-office-work-flow` was wiped this way on 2026-08-02: 4 skills → 1). `github_push.sh`
+detects this and exits 8. The correct path is an **incremental subdirectory release**:
+
+```bash
+SLUG=<skill-slug>
+SRC=~/.workbuddy/skills/$SLUG/
+REPO=~/skills/<repo-name>                        # reuse the standing clone, not a fresh /tmp one
+rsync -a --delete "$SRC" "$REPO/skills/$SLUG/"   # --delete: leave no stale files behind
+cd "$REPO" && git status --short                 # must show ONLY skills/$SLUG/**
+git add "skills/$SLUG" && git commit -m "$SLUG v<x.y.z>: <one line>"
+git push origin main
+```
+
+"First release of a new member" and "new version of an existing member" are the same path —
+only the commit message differs. `--delete` matters: without it, files you removed at the source
+never leave the repo, and the `git status` check stops being a trustworthy "only this member
+changed" gate.
+
+**Two network traps (verified 2026-10-06, mainland-China networks)**:
+
+- `git push` hangs or fails because `github.com:443` is blocked — while `api.github.com` still
+  works, which easily misreads as "network is fine". Push through the local proxy:
+  `git -c http.proxy=http://127.0.0.1:<port> -c https.proxy=http://127.0.0.1:<port> push origin main`.
+- `raw.githubusercontent.com` is blocked → verify through the GitHub **API** instead:
+  `GET /repos/<owner>/<repo>/contents/skills/<slug>/SKILL.md?ref=main` (base64-decode, grep
+  `**Version**`), plus `GET .../contents/skills/<slug>/scripts` to confirm new files actually shipped.
+
+**If a repo was already overwritten**: recovery is usually possible via `git reflog`, or via the
+**dangling commit** the force-push left on GitHub (that is how `better-office-work-flow` was
+recovered from `63ae4858` on 2026-08-02). Stop pushing immediately — a further push can garbage-collect
+the dangling commit.
+
 ---
 
 ## 15. Memory notes

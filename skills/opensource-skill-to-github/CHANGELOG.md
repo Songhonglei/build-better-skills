@@ -3,6 +3,13 @@
 All notable changes to this skill are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+### v1.0.19 (2026-10-06)
+- **新增 SKILL.md §9.4「mono-repo 子目录增量发版」**（`references/opensource_playbook.md` §14.4 补英文对照）：此前只有 v1.0.17 的护栏——它告诉你「不能把 fork 的 main 推到 mono-repo」，却没写「那正确该怎么做」。
+  - 写清增量发版完整流程：复用常驻克隆 → `rsync -a --delete` 同步进 `skills/<slug>/` → `git status` 只应见该子树 → commit → push；并说明**首发新成员**与**给已有成员发新版**是同一条路径，只差 commit message。
+  - **补两个实测网络坑（2026-10-06）**：① `github.com:443` 被墙但 `api.github.com` 通，push 需走本机代理——症状是长时间挂起，容易被误判成「网络没问题」；② `raw.githubusercontent.com` 不通，验真改走 GitHub API `contents/`（base64 解码查 `**Version**`，并查新增文件是否真进包）。
+  - 补「推错后的恢复」：`git reflog` 或 force-push 留下的孤立提交（2026-08-02 从 `63ae4858` 恢复的先例），并强调**先停手**、别再推第二个版本。
+- **修正版本号不同步**：SKILL.md 头部停在 `1.0.17`、底部停在 `1.0.10`，而 CHANGELOG 已到 `1.0.18`——v1.0.18 那次提交只改了 CHANGELOG 与脚本，漏改 SKILL.md 这两处。本次统一为 1.0.19。
+
 ### v1.0.18 (2026-09-05)
 - **修复 skillhub.cn 发版丢失 changelog**：`scripts/skillhub_cn_publish.sh` 的 payload 原先只构造 `slug/name/displayName/summary/description/version/claimSlug/joinContest`，**缺 `changelog` 字段**，导致平台上每个版本都显示默认文案 `Initial release`。
   - **定位**：对比同一 skill 在平台上的两个版本——1.3.3 由另一调用方带 changelog 发布即显示正常，走本脚本发布的 1.3.4 变成 `Initial release`，确认为脚本局限而非发版失败。

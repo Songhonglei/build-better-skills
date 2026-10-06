@@ -12,7 +12,7 @@ description: >
 
 # Open-source a Local Skill to GitHub (+ optional clawhub.com)
 
-- **Version**: 1.0.17
+- **Version**: 1.0.19
 - **License**: MIT
 - **Author**: Evan Song · [github.com/Songhonglei](https://github.com/Songhonglei)
 - **Repository**: https://github.com/Songhonglei/build-better-skills/tree/main/skills/opensource-skill-to-github
@@ -99,7 +99,7 @@ OSG_GITHUB_TOKEN_CMD="security find-generic-password -a $USER -s opensource-skil
 | 6. README + CHANGELOG + .gitignore 生成 | 🔧 | `scripts/scaffold.sh`（author/handle 自动从 profile 读；changelog 独立文件） |
 | 7. 本地 git init | 🔧 | `scripts/git_init.sh`（user.name/email 自动从 profile 读） |
 | 8. UGLIC 自审（推荐） | 🔗 | 调 `glic-check` skill |
-| 9. GitHub repo 创建（用户手工）+ push | 💬 → 🔧 | 用户建 repo + `scripts/github_push.sh <fork> <repo-name>`（handle 自动拼） |
+| 9. GitHub repo 创建（用户手工）+ push | 💬 → 🔧 | 用户建 repo + `scripts/github_push.sh <fork> <repo-name>`（handle 自动拼）；**mono-repo 改走子目录增量发版 → §9.4** |
 | 10. clawhub 发版（可选）+ memory 沉淀 | 🔧 → 💬 | `scripts/clawhub_publish.sh`（已登录免 token）+ 沉淀文档 |
 | 11. 腾讯 skillhub.cn 发版（可选） | 🔧 | `SKILLHUB_CN_TOKEN=skh_xxx scripts/skillhub_cn_publish.sh <fork>` |
 
@@ -297,7 +297,7 @@ scripts/git_init.sh <fork-path> "<user.name>" "<user.email>"
 
 ## Step 9: GitHub repo 创建 + push
 
-> ⚠️ **mono-repo 安全护栏（2026-08-02 新增）**：`github_push.sh` 推送前会检测目标 repo 根目录是否含 `skills/` 目录。若检测到（说明是 mono-repo），脚本会 **exit 8 拒绝推送**，并给出「子目录模式」手动发布指引。这是因为本流程把单个 skill 当 repo 根目录推到 main，会 force-overwrite 掉 mono-repo 里 `skills/` 下的所有其它 skill（`better-office-work-flow` 仓库 08-02 被这样冲掉过：4 skill → 1 skill）。对 mono-repo **必须**改用子目录模式（clone 目标 repo → 放进 `skills/<slug>/` → commit → push），绝不能直接推 fork 的 main。如确需清空 repo 只留这一个 skill，设 `OSG_ALLOW_MONOREPO_OVERWRITE=1`。
+> ⚠️ **mono-repo 安全护栏（2026-08-02 新增）**：`github_push.sh` 推送前会检测目标 repo 根目录是否含 `skills/` 目录。若检测到（说明是 mono-repo），脚本会 **exit 8 拒绝推送**，并给出「子目录模式」手动发布指引。这是因为本流程把单个 skill 当 repo 根目录推到 main，会 force-overwrite 掉 mono-repo 里 `skills/` 下的所有其它 skill（`better-office-work-flow` 仓库 08-02 被这样冲掉过：4 skill → 1 skill）。对 mono-repo **必须**改用子目录模式（clone 目标 repo → 放进 `skills/<slug>/` → commit → push），绝不能直接推 fork 的 main。如确需清空 repo 只留这一个 skill，设 `OSG_ALLOW_MONOREPO_OVERWRITE=1`。**对 mono-repo 的正确做法见 §9.4。**
 
 ### 9.1 用户操作（必须用户做，AI 不能自动）
 
@@ -340,6 +340,55 @@ scripts/github_push.sh <fork-path> <github-handle>/<repo-name>
 **Why Basic Auth header**：某些受限网络环境 push GitHub 时 bearer 已不认，必须用 Basic Auth header 注入；token 不进 remote URL。
 
 push 完成后：如果本次用了临时 PAT，再次提醒用户 **去 GitHub Settings 撤销 PAT**；如果用的是 GitHub CLI / Keychain 长期配置，不要求每次撤销。
+
+### 9.4 mono-repo 子目录增量发版（实际更常用）
+
+**何时走这条**：目标 repo 是 **mono-repo**——根目录有 `skills/`，一个 repo 装多个 skill（本 skill 自己的家 `build-better-skills` 就是）。此时**不要**跑 `github_push.sh`（护栏会 exit 8 拦住，见 Step 9 开头的告警），改用子目录增量发版。
+
+**「增量」的含义**：只动 `skills/<slug>/` 这一棵子树，其它成员一个字节都不碰。**首发新成员**和**给已有成员发新版**是同一条路径，只差 commit message。
+
+**用常驻克隆，不要每次 clone 到 /tmp**：本机 `~/skills/<repo>/` 通常已有该 repo 的常驻克隆，直接复用它——省一次全量拉取，也避免 `/tmp` 副本和常驻克隆互相混淆。
+
+```bash
+SLUG=<skill-slug>
+SRC=~/.workbuddy/skills/$SLUG/          # 源 skill（唯一真实维护点）
+REPO=~/skills/<repo-name>               # 目标 mono-repo 的常驻克隆
+
+# 1. 同步 源 → repo 子目录（末尾斜杠：把内容同步进去）
+rsync -a --delete "$SRC" "$REPO/skills/$SLUG/"
+
+# 2. 确认只动了这一个成员（其它成员零 diff）
+cd "$REPO" && git status --short
+
+# 3. 提交 + 推送
+git add "skills/$SLUG" && git commit -m "$SLUG v<x.y.z>: <一句话>"
+git push origin main                    # 受限网络见下「两个网络坑」
+```
+
+**Why `--delete`**：增量发版最容易出的错是「新增的文件进得去、删掉的文件出不来」，一轮轮攒下来 repo 里留着源目录早已没有的旧文件。`--delete` 让子目录与源严格一致，也让 `git status` 的第 2 步判别可信。
+
+**两个网络坑（2026-10-06 实测，中国大陆网络环境）**：
+
+| 症状 | 真因 | 解法 |
+|---|---|---|
+| `git push` 长时间挂起或报连接失败 | `github.com:443` 被墙，但 **`api.github.com` 通** ⚠️ 容易误判成"网没问题" | 走本机代理：`git -c http.proxy=http://127.0.0.1:<port> -c https.proxy=http://127.0.0.1:<port> push origin main`（端口看你本地代理软件） |
+| `raw.githubusercontent.com` 取不到内容 | 该域名被墙 | **验真改走 GitHub API**，别用 raw |
+
+**推送后必须验真**（raw 不通，用 API）：
+
+```bash
+API=https://api.github.com/repos/<owner>/<repo>/contents/skills/<slug>
+# ① 远端版本号（取 SKILL.md 正文 base64 解码后再正则）
+curl -s "$API/SKILL.md?ref=main" | python3 -c "
+import sys,json,base64,re
+c=base64.b64decode(json.load(sys.stdin)['content']).decode()
+print('远端 Version:', re.search(r'\*\*Version\*\*:\s*([\d.]+)', c).group(1))"
+# ② 新增文件是否真进包（光看本地 commit 不算数）
+curl -s "$API/scripts?ref=main" | python3 -c "
+import sys,json; [print(' ', x['name'], x['size'], 'bytes') for x in json.load(sys.stdin)]"
+```
+
+**万一推错（把 repo 根当 main 推上去，冲掉了成员）**：内容通常还能捞回来——`git reflog` 找覆盖前的 commit，或到 GitHub 上找那次 force-push 留下的**孤立提交**（`better-office-work-flow` 2026-08-02 就是这么从孤立提交 `63ae4858` 恢复的）。**第一反应是停手**，不要再推第二个版本，否则孤立提交会被覆盖掉、就真找不回了。
 
 ---
 
@@ -414,4 +463,4 @@ CLAWHUB_TOKEN=clh_xxx scripts/clawhub_publish.sh <fork-abs-path>
 
 ## 版本
 
-当前 **v1.0.10**。完整版本历史见 [CHANGELOG.md](./CHANGELOG.md)。
+当前 **v1.0.19**。完整版本历史见 [CHANGELOG.md](./CHANGELOG.md)。
