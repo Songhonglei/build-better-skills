@@ -14,6 +14,7 @@ description: >
   Also triggers in Chinese: "安装skill xxx"、"装一下xxx"、"下载skill xxx"、
   "从 clawhub 装 xxx"、"从 skillhub.cn 装 xxx"、"用 skills.sh 装 xxx"、
   "装 claude 的 xxx"、"从我的 hub 装 xxx"。
+version: 1.0.7
 ---
 
 # Skill Hub United Installer

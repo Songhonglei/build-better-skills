@@ -10,7 +10,7 @@ description: >
   --target user-hook:./my-script.sh for custom destinations. Triggers on:
   publish skill, release skill, push to skill hub, ship skill to multiple hubs,
   发布 skill, 上传到 clawhub, 发布到 skillhub.cn, package only, 打包不发布.
-version: 1.1.0
+version: 1.1.1
 ---
 
 # skill-release-plus
