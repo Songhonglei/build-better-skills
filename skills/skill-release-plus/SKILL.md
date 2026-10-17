@@ -15,7 +15,7 @@ version: 1.1.0
 
 # skill-release-plus
 
-**Version**: 1.1.0  
+**Version**: 1.1.1  
 **Author**: Evan Song <[github.com/Songhonglei](https://github.com/Songhonglei)>
 **Repo**: <https://github.com/Songhonglei/build-better-skills/tree/main/skills/skill-release-plus>
 **License**: MIT (this repo) — clawhub mirror auto-uses MIT-0 (platform-enforced)  
@@ -25,7 +25,24 @@ Sign → Pack → Publish to **multiple skill hubs in one command**. Supports
 `clawhub.com`, `skillhub.cn` (Tencent Cloud), `GitHub Releases`, and any
 custom hub via a user-hook script.
 
-## What's new in 1.1.0
+## What's new in 1.1.1
+
+- **Safety-net exclusion (hardcoded)**: credentials and key material
+  (`*.pem` / `*.key` / `id_rsa*` / `credentials.json` / `.env.*` /
+  `service-account*.json` etc.) are **never packaged**, regardless of
+  user `exclude.json` — user config can exclude more, but cannot re-include
+  safety-net files. Everything the safety net blocked is reported after
+  packaging, so you always know which sensitive files were left out of the
+  release.
+- **`sign.key` no longer ships in packages**: the filename (`.key`) tripped
+  hub-side secret scanners. Signing still works locally; the signature
+  artifact stays on the publishing machine.
+- **Symlinks are not followed** during staging/packaging — a link pointing
+  outside the skill dir can no longer pull external content (e.g. private
+  keys) into the package. Skipped links are reported.
+- See 1.1.0 notes below for sign-mode auto-detect and `--package-only`.
+
+### 1.1.0
 
 - **Sign mode auto-detect**: signing is now optional and automatic — publish
   unsigned out-of-the-box (zero setup); drop a private key via

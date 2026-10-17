@@ -71,6 +71,46 @@ _DEFAULT_EXCLUDE = {
     ],
 }
 
+# ── 安全网排除（硬编码，叠加在用户 exclude.json 之上，用户配置不可放行）──────
+# 目标：密钥/凭证/私钥类文件绝不进入发布包。用户 exclude.json 只能"额外排除"，
+# 无法把安全网内的文件加回包里。命中安全网的文件会在打包结果中如实报告，
+# 告知用户哪些内容未随包发布。
+_SAFETY_NET = {
+    "files": {
+        "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
+        ".netrc", ".npmrc", ".pypirc",
+        ".git-credentials", ".gitcredentials",
+        "credentials.json", "secrets.json",
+        "service-account.json", "htpasswd", ".htpasswd", ".pgpass",
+    },
+    "exts": {
+        ".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".ppk",
+    },
+    "patterns": [
+        "id_rsa*", "id_dsa*", "id_ecdsa*", "id_ed25519*",
+        "service-account*.json",
+        ".env.*",           # .env.staging / .env.production 等（.env/.env.local 在用户层）
+        "*credentials*.json",
+        "*secret*.json",
+    ],
+}
+
+
+def _matches_safety_net(rel_path: str) -> bool:
+    """是否命中安全网排除（与用户 exclude 规则独立叠加）。"""
+    parts = rel_path.replace("\\", "/").split("/")
+    for part in parts:
+        if part in _SAFETY_NET["files"]:
+            return True
+    ext = os.path.splitext(rel_path)[1].lower()
+    if ext in _SAFETY_NET["exts"]:
+        return True
+    fname = os.path.basename(rel_path)
+    for pat in _SAFETY_NET["patterns"]:
+        if fnmatch.fnmatch(fname, pat) or fnmatch.fnmatch(rel_path.replace("\\", "/"), pat):
+            return True
+    return False
+
 
 def load_exclude_config(skill_root: Path) -> tuple:
     """Load exclude config from <skill_root>/config/exclude.json.
@@ -145,6 +185,8 @@ def package_skill(slug: str, skill_dir: str, out_dir: str,
     try:
         oversize_files = []
         pending = []
+        sensitive_excluded = []   # 安全网拦截（未随包发布的敏感内容，如实报告）
+        symlinks_skipped = []     # 符号链接（不跟随，防链接目标内容混入包）
 
         for root, dirs, files in os.walk(skill_dir):
             dirs[:] = sorted(
@@ -154,8 +196,21 @@ def package_skill(slug: str, skill_dir: str, out_dir: str,
             for fname in sorted(files):
                 abs_path = os.path.join(root, fname)
                 rel_from_skill = os.path.relpath(abs_path, skill_dir)
+                if fname == _SIGN_KEY_FILENAME:
+                    # v1.1.1: sign.key 不再随包发布（文件名含 .key 易被 hub 侧
+                    # 扫描器误判为私钥泄漏），记录到报告让用户知情
+                    sensitive_excluded.append(
+                        rel_from_skill.replace("\\", "/") + "  (签名件，v1.1.1 起不随包发布)"
+                    )
+                    continue
+                if os.path.islink(abs_path):
+                    symlinks_skipped.append(rel_from_skill.replace("\\", "/"))
+                    continue
                 if _should_exclude(rel_from_skill, EXCLUDE_DIRS,
                                    EXCLUDE_FILES, EXCLUDE_EXTS, EXCLUDE_PATTERNS):
+                    continue
+                if _matches_safety_net(rel_from_skill):
+                    sensitive_excluded.append(rel_from_skill.replace("\\", "/"))
                     continue
                 rel_from_parent = os.path.relpath(
                     abs_path, os.path.dirname(skill_dir)
@@ -192,6 +247,8 @@ def package_skill(slug: str, skill_dir: str, out_dir: str,
             "path": out_path,
             "file_count": len(file_names),
             "files": file_names,
+            "sensitive_excluded": sensitive_excluded,
+            "symlinks_skipped": symlinks_skipped,
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -401,6 +458,9 @@ def build_clean_stage(slug: str, skill_dir: str, stage_root: str,
             if _should_exclude(rel, EXCLUDE_DIRS, EXCLUDE_FILES,
                                 EXCLUDE_EXTS, EXCLUDE_PATTERNS):
                 continue
+            if os.path.islink(abs_path):
+                # 不跟随符号链接，防止把链接目标（可能在工作区外）的内容拷入 stage
+                continue
             dst = os.path.join(stage_skill, rel)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy2(abs_path, dst)
@@ -480,6 +540,7 @@ def do_package_only(slug: str, skill_dir: str, out_dir: str,
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.abspath(os.path.join(out_dir, f"{slug}-{expected_version}.zip"))
     pending = []
+    sensitive_excluded = []   # 安全网拦截报告（与 package_skill 同口径）
     try:
         for root, dirs, files in os.walk(skill_dir):
             for dirname in dirs:
@@ -497,9 +558,15 @@ def do_package_only(slug: str, skill_dir: str, out_dir: str,
                     return {"ok": False, "code": "UNSAFE_SYMLINK",
                             "error": "candidate skill must not contain symlinks: "
                                      + rel_path}
-                if fname == _SIGN_KEY_FILENAME or _should_exclude(
-                        rel_path, EXCLUDE_DIRS, EXCLUDE_FILES,
-                        EXCLUDE_EXTS, EXCLUDE_PATTERNS):
+                if fname == _SIGN_KEY_FILENAME:
+                    sensitive_excluded.append(
+                        rel_path + "  (签名件，v1.1.1 起不随包发布)")
+                    continue
+                if _should_exclude(rel_path, EXCLUDE_DIRS, EXCLUDE_FILES,
+                                   EXCLUDE_EXTS, EXCLUDE_PATTERNS):
+                    continue
+                if _matches_safety_net(rel_path):
+                    sensitive_excluded.append(rel_path)
                     continue
                 size = os.path.getsize(abs_path)
                 if size > MAX_PACKAGE_SIZE_BYTES:
@@ -528,7 +595,8 @@ def do_package_only(slug: str, skill_dir: str, out_dir: str,
                 "version": expected_version,
                 "toolVersion": tool_version,
                 "packagePath": out_path, "packageSha256": package_sha256,
-                "fileCount": len(manifest), "files": manifest}
+                "fileCount": len(manifest), "files": manifest,
+                "sensitive_excluded": sensitive_excluded}
     except Exception as exc:
         return {"ok": False, "code": "PACKAGE_FAILED", "error": str(exc)}
 

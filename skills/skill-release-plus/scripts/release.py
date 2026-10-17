@@ -259,6 +259,21 @@ def cmd_publish(args, cfg: dict) -> int:
     print(f"   ✓ packaged {pkg_result['file_count']} files → {tar_path}",
           file=sys.stderr)
 
+    # 安全网报告：如实告知哪些敏感内容被拦截、未随包发布
+    sensitive = pkg_result.get("sensitive_excluded") or []
+    if sensitive:
+        print("   🔒 安全网拦截 — 以下敏感内容未随包发布：", file=sys.stderr)
+        for f in sensitive:
+            print(f"     - {f}", file=sys.stderr)
+    skipped_links = pkg_result.get("symlinks_skipped") or []
+    if skipped_links:
+        print("   🔗 以下符号链接已跳过（不跟随进包）：", file=sys.stderr)
+        for f in skipped_links:
+            print(f"     - {f}", file=sys.stderr)
+    if sign_mode:
+        print("   ℹ️  v1.1.1 起 sign.key 不再随包发布（避免 hub 侧扫描误报）",
+              file=sys.stderr)
+
     # 6. Dry-run: stop here, just report what would happen
     if args.dry_run:
         print(f"\n🔍 [DRY-RUN] would publish to: {', '.join(targets)}", file=sys.stderr)
@@ -269,6 +284,8 @@ def cmd_publish(args, cfg: dict) -> int:
             "version": args.version,
             "targets": targets,
             "package": {"path": tar_path, "file_count": pkg_result["file_count"]},
+            "sensitive_excluded": pkg_result.get("sensitive_excluded") or [],
+            "symlinks_skipped": pkg_result.get("symlinks_skipped") or [],
         }
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
